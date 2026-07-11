@@ -1,16 +1,63 @@
 import { useState } from "react";
 import UploadCard from "../components/UploadCard";
+import { uploadFile } from "../services/uploadService";
 import "./UploadPage.css";
 
 export default function UploadPage() {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadState, setUploadState] = useState("idle"); // idle | uploading | success | error
+  const [uploadResult, setUploadResult] = useState(null);
+  const [uploadError, setUploadError] = useState("");
 
   const handleFileSelect = (file) => {
     setSelectedFile(file);
+    // Reset upload state ketika file baru dipilih
+    setUploadState("idle");
+    setUploadResult(null);
+    setUploadError("");
   };
 
   const handleRemoveFile = () => {
     setSelectedFile(null);
+    setUploadState("idle");
+    setUploadResult(null);
+    setUploadError("");
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+
+    setUploadState("uploading");
+    setUploadError("");
+    setUploadResult(null);
+
+    try {
+      const data = await uploadFile(selectedFile);
+      setUploadState("success");
+      setUploadResult(data.file); // data berisi { success, message, file: {...} }
+    } catch (error) {
+      setUploadState("error");
+      if (error.response) {
+        // Server memberikan respons dengan error
+        setUploadError(
+          error.response.data?.detail || "Upload failed due to server error.",
+        );
+      } else if (error.request) {
+        // Tidak ada respons (jaringan / backend mati)
+        setUploadError(
+          "Unable to reach the server. Please check your connection.",
+        );
+      } else {
+        setUploadError("An unexpected error occurred.");
+      }
+    }
+  };
+
+  const handleReset = () => {
+    setSelectedFile(null);
+    setUploadState("idle");
+    setUploadResult(null);
+    setUploadError("");
   };
 
   return (
@@ -27,6 +74,11 @@ export default function UploadPage() {
           file={selectedFile}
           onFileSelect={handleFileSelect}
           onRemove={handleRemoveFile}
+          onUpload={handleUpload}
+          uploadState={uploadState}
+          uploadResult={uploadResult}
+          uploadError={uploadError}
+          onReset={handleReset}
         />
       </div>
 
@@ -36,7 +88,7 @@ export default function UploadPage() {
           <strong>TXT</strong>
         </p>
         <p>
-          Maximum file size: <strong>10 MB</strong>
+          Maximum file size: <strong>20 MB</strong>
         </p>
       </div>
     </div>

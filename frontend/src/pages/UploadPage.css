@@ -182,3 +182,97 @@
   color: #6c757d;
   line-height: 1.5;
 }
+
+/* Upload status umum */
+.upload-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e9ecef;
+  border-top: 3px solid #0d6efd;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 0.5rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.status-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.upload-status h3 {
+  margin: 0.25rem 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+/* Success */
+.success .result-details {
+  background: #f0f8f4;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin: 0.75rem 0;
+  text-align: left;
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.success .result-details p {
+  margin: 0.25rem 0;
+}
+
+.reset-btn,
+.retry-btn {
+  background-color: #0d6efd;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 0.75rem;
+}
+
+.reset-btn:hover,
+.retry-btn:hover {
+  background-color: #0b5ed7;
+}
+
+/* Error */
+.error .error-message {
+  color: #dc3545;
+  background: #fff5f5;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+/* Tombol Upload aktif */
+.upload-btn.active {
+  background-color: #198754;
+  cursor: pointer;
+  opacity: 1;
+}
+
+.upload-btn.active:hover {
+  background-color: #157347;
+}
+
+/* Hilangkan tombol disabled sebelumnya (sudah tidak digunakan) */
+.upload-btn:disabled {
+  display: none;
+}
