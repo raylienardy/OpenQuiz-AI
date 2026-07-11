@@ -2,33 +2,45 @@
 Service layer for handling file uploads.
 """
 
-from fastapi import UploadFile, HTTPException # type: ignore
-from ..utils.file_utils import validate_file
+from fastapi import UploadFile
+from ..utils.file_validator import validate_uploaded_file
+
+
+class UploadError(Exception):
+    """Custom exception to carry error message and status code."""
+    def __init__(self, message: str, status_code: int = 400):
+        self.message = message
+        self.status_code = status_code
+        super().__init__(self.message)
 
 
 def handle_upload(file: UploadFile) -> dict:
     """
-    Validate the uploaded file and return its metadata.
+    Validate the uploaded file and return metadata.
 
     Args:
         file: The uploaded file.
 
     Returns:
-        dict: Metadata containing filename, content_type, and size.
+        dict: Metadata (filename, content_type, size) if valid.
 
     Raises:
-        HTTPException: If validation fails or an unexpected error occurs.
+        UploadError: If validation fails.
     """
-    if not file:
-        raise HTTPException(status_code=400, detail="No file provided.")
+    error_message = validate_uploaded_file(file)
 
-    # Validate the file
-    try:
-        validate_file(file)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    if error_message:
+        # Tentukan status code
+        if "No file" in error_message or "empty" in error_message:
+            status_code = 400
+        elif "Unsupported" in error_message:
+            status_code = 415
+        elif "exceeds" in error_message:
+            status_code = 413
+        else:
+            status_code = 400
+        raise UploadError(error_message, status_code)
 
-    # Extract metadata (file is kept in memory; no disk storage)
     filename = file.filename
     content_type = file.content_type or "application/octet-stream"
     size = file.size if file.size is not None else 0
