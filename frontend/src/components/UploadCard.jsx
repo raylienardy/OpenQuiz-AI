@@ -9,6 +9,7 @@ export default function UploadCard({
   uploadState,
   uploadResult,
   uploadError,
+  validationError,
   onReset,
 }) {
   const isIdle = uploadState === "idle";
@@ -16,14 +17,30 @@ export default function UploadCard({
   const isSuccess = uploadState === "success";
   const isError = uploadState === "error";
 
+  const isFileValid = file && !validationError;
+
   return (
     <div className="upload-card">
-      {/* Tampilan dropzone atau file terpilih (hanya saat idle atau belum ada file yang dipilih) */}
+      {/* Tampilan dropzone saat belum ada file */}
       {!file && isIdle && <FileDropzone onFileSelect={onFileSelect} />}
 
-      {/* Tampilan file terpilih saat idle, uploading, error (tidak saat success) */}
+      {/* Tampilan file terpilih + status validasi saat idle, uploading, error (kecuali success) */}
       {file && !isSuccess && (
-        <SelectedFile file={file} onRemove={!isUploading ? onRemove : null} />
+        <>
+          <SelectedFile file={file} onRemove={!isUploading ? onRemove : null} />
+          {isIdle && validationError && (
+            <div className="validation-message error">
+              <span className="validation-icon">⚠️</span>
+              <p>{validationError}</p>
+            </div>
+          )}
+          {isIdle && isFileValid && (
+            <div className="validation-message success">
+              <span className="validation-icon">✅</span>
+              <p>Ready to upload</p>
+            </div>
+          )}
+        </>
       )}
 
       {/* Loading spinner */}
@@ -57,7 +74,7 @@ export default function UploadCard({
         </div>
       )}
 
-      {/* Error */}
+      {/* Error (dari backend/network) */}
       {isError && (
         <div className="upload-status error">
           <span className="status-icon">❌</span>
@@ -71,8 +88,8 @@ export default function UploadCard({
         </div>
       )}
 
-      {/* Tombol Upload (muncul hanya saat idle dengan file terpilih) */}
-      {file && isIdle && (
+      {/* Tombol Upload hanya jika idle, file valid, dan tidak ada error validasi */}
+      {file && isIdle && isFileValid && (
         <>
           <button className="upload-btn active" onClick={onUpload}>
             Upload

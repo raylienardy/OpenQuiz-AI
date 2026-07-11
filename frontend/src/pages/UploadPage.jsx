@@ -1,6 +1,7 @@
 import { useState } from "react";
 import UploadCard from "../components/UploadCard";
 import { uploadFile } from "../services/uploadService";
+import { validateFile } from "../utils/validateFile";
 import "./UploadPage.css";
 
 export default function UploadPage() {
@@ -8,9 +9,14 @@ export default function UploadPage() {
   const [uploadState, setUploadState] = useState("idle"); // idle | uploading | success | error
   const [uploadResult, setUploadResult] = useState(null);
   const [uploadError, setUploadError] = useState("");
+  const [validationError, setValidationError] = useState(null); // client-side validation
 
   const handleFileSelect = (file) => {
+    // Validasi di sisi klien segera setelah file dipilih
+    const error = validateFile(file);
     setSelectedFile(file);
+    setValidationError(error);
+
     // Reset upload state ketika file baru dipilih
     setUploadState("idle");
     setUploadResult(null);
@@ -19,13 +25,15 @@ export default function UploadPage() {
 
   const handleRemoveFile = () => {
     setSelectedFile(null);
+    setValidationError(null);
     setUploadState("idle");
     setUploadResult(null);
     setUploadError("");
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    // Jangan upload jika validasi gagal (seharusnya tombol sudah disabled, tapi double-check)
+    if (!selectedFile || validationError) return;
 
     setUploadState("uploading");
     setUploadError("");
@@ -34,16 +42,14 @@ export default function UploadPage() {
     try {
       const data = await uploadFile(selectedFile);
       setUploadState("success");
-      setUploadResult(data.file); // data berisi { success, message, file: {...} }
+      setUploadResult(data.file);
     } catch (error) {
       setUploadState("error");
       if (error.response) {
-        // Server memberikan respons dengan error
         setUploadError(
           error.response.data?.detail || "Upload failed due to server error.",
         );
       } else if (error.request) {
-        // Tidak ada respons (jaringan / backend mati)
         setUploadError(
           "Unable to reach the server. Please check your connection.",
         );
@@ -55,6 +61,7 @@ export default function UploadPage() {
 
   const handleReset = () => {
     setSelectedFile(null);
+    setValidationError(null);
     setUploadState("idle");
     setUploadResult(null);
     setUploadError("");
@@ -78,6 +85,7 @@ export default function UploadPage() {
           uploadState={uploadState}
           uploadResult={uploadResult}
           uploadError={uploadError}
+          validationError={validationError}
           onReset={handleReset}
         />
       </div>

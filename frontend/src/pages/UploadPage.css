@@ -276,3 +276,29 @@
 .upload-btn:disabled {
   display: none;
 }
+
+.validation-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  margin: 0.75rem 0;
+}
+
+.validation-message.error {
+  background-color: #fff5f5;
+  border: 1px solid #ffc9c9;
+  color: #cc0000;
+}
+
+.validation-message.success {
+  background-color: #f0f8f4;
+  border: 1px solid #b7dfc5;
+  color: #0a5c2a;
+}
+
+.validation-icon {
+  font-size: 1.2rem;
+}
