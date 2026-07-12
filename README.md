@@ -113,8 +113,6 @@ openquiz-ai/
 
 MIT
 
-````
-
 ---
 
 ### 3. Dokumentasi Baru
@@ -136,8 +134,7 @@ OpenQuiz AI uses a **provider-independent architecture** for AI services. This m
 - **Future-proof** – supports Ollama, OpenAI, Claude, etc. later
 
 ## Architecture
-
-````
+```
 
 Application
 │
