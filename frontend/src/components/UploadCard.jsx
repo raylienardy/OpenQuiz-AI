@@ -4,6 +4,7 @@ import LoadingSpinner from "./feedback/LoadingSpinner";
 import ProgressBar from "./feedback/ProgressBar";
 import UploadResult from "./feedback/UploadResult";
 import UploadError from "./feedback/UploadError";
+import DocumentPreview from "./preview/DocumentPreview";
 
 export default function UploadCard({
   file,
@@ -23,14 +24,11 @@ export default function UploadCard({
 
   return (
     <div className="upload-card">
-      {/* Idle: dropzone */}
       {!file && isIdle && <FileDropzone onFileSelect={onFileSelect} />}
 
-      {/* File selected, not success yet (idle, uploading, error) */}
       {file && !isSuccess && (
         <>
           <SelectedFile file={file} onRemove={isUploading ? null : onRemove} />
-          {/* Validasi */}
           {isIdle && validationError && (
             <div className="validation-message error">
               <span className="validation-icon">⚠️</span>
@@ -46,21 +44,30 @@ export default function UploadCard({
         </>
       )}
 
-      {/* Uploading state */}
       {isUploading && (
         <div className="upload-feedback">
           <LoadingSpinner size={36} />
           <ProgressBar indeterminate />
-          <p className="uploading-text">Uploading... Please wait.</p>
+          <p className="uploading-text">Extracting document... Please wait.</p>
         </div>
       )}
 
-      {/* Success */}
       {isSuccess && uploadResult && (
-        <UploadResult fileInfo={uploadResult} onReset={onReset} />
+        <>
+          <UploadResult
+            fileInfo={{
+              filename: uploadResult.filename,
+              content_type: uploadResult.content_type,
+              size: uploadResult.size,
+            }}
+            onReset={onReset}
+          />
+          {uploadResult.text != null && (
+            <DocumentPreview result={uploadResult} />
+          )}
+        </>
       )}
 
-      {/* Error */}
       {isError && (
         <UploadError
           message={uploadError || "An unexpected error occurred."}
@@ -68,13 +75,12 @@ export default function UploadCard({
         />
       )}
 
-      {/* Tombol Upload (idle, file valid) */}
       {file && isIdle && !validationError && (
         <>
           <button className="upload-btn active" onClick={onUpload}>
-            Upload
+            Upload & Extract
           </button>
-          <p className="upload-hint">Click to upload the selected file.</p>
+          <p className="upload-hint">Click to upload and extract text.</p>
         </>
       )}
     </div>
