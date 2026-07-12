@@ -1,141 +1,251 @@
 # OpenQuiz AI
 
-> An open-source AI-powered question generation platform.
+AI-powered question generation platform (Version 1.0 MVP).
 
-OpenQuiz AI is an open-source platform that helps educators, students, and developers generate high-quality questions from learning materials using Artificial Intelligence.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Status: Milestone 2 Complete](https://img.shields.io/badge/status-milestone%202-brightgreen)](#)
 
-The project is designed to be modular, extensible, and easy to customize. It starts as a simple AI Question Generator and gradually evolves into a complete AI-powered assessment platform.
+## 🚀 Current Features (v1.0 in Progress)
 
----
+- ✅ **Project Foundation** – React + Vite frontend, FastAPI backend, health-check communication.
+- ✅ **Upload System** – Drag & drop, file selection, client & server validation, clear feedback states.
+  - Supported formats: **PDF**, **DOCX**, **TXT**
+  - Maximum file size: **20 MB**
+- ⬜ Text Extraction (next milestone)
+- ⬜ AI Question Generation (Gemini)
+- ⬜ Result Viewer & PDF Export
 
-## ✨ Features
-
-- Generate Multiple Choice Questions (MCQ)
-- Generate Essay Questions
-- Generate True/False Questions
-- Generate Answer Keys
-- Generate Question Explanations
-- Upload PDF, DOCX, PPTX, or plain text
-- AI-powered content understanding
-- Export questions to PDF
-- REST API for developers
-- Open Dataset support
-
----
-
-## 🎯 Project Goals
-
-OpenQuiz AI aims to:
-
-- Help teachers create assessments faster.
-- Help students generate practice questions.
-- Provide an open-source dataset for AI question generation.
-- Become a research platform for AI in Education.
-- Allow developers to build their own educational AI applications.
-
----
-
-## 🏗 Project Structure
+## 📂 Project Structure
 
 ```
+
 openquiz-ai/
-│
-├── frontend/
-├── backend/
-├── ai/
-│   ├── prompting/
-│   ├── rag/
-│   ├── evaluation/
-│   └── datasets/
-│
-├── datasets/
-│
-├── docs/
-│
-├── examples/
-│
-└── README.md
+├── backend/ # FastAPI server (Python)
+├── frontend/ # React SPA (Vite + JavaScript)
+├── docs/ # Documentation
+├── datasets/ # Future open datasets
+└── examples/ # Usage examples
+
 ```
 
----
+## ⚡ Quick Start
 
-## 🧠 AI Technologies
+### Prerequisites
 
-The project is designed to support multiple AI providers.
+- Python 3.10+
+- Node.js 18+
+- Git
 
-Examples:
+### 1. Clone & setup backend
 
-- Google Gemini
-- OpenAI
-- Claude
-- Hugging Face
-- Ollama
-- Local LLMs
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate      # or venv\Scripts\activate on Windows
+pip install -r requirements.txt
+cp .env.example .env           # add your GEMINI_API_KEY (optional for now)
+uvicorn app.main:app --reload
+```
 
-The AI backend is modular, making it easy to switch between different models.
+API runs at [http://localhost:8000](http://localhost:8000).
 
----
+### 2. Setup frontend
 
-## 📚 Dataset
+```bash
+cd frontend
+npm install
+cp .env.example .env           # adjust VITE_API_URL if needed
+npm run dev
+```
 
-OpenQuiz AI also provides an open dataset for educational question generation.
+App opens at [http://localhost:5173](http://localhost:5173).  
+The home page shows backend connectivity status.  
+Navigate to `/upload` to test the upload feature.
 
-Example format:
+### 3. Verify upload
+
+Drag a PDF, DOCX, or TXT file onto the upload page or use the file browser.  
+After client-side validation, click **Upload** – the backend will validate again and return file metadata.  
+No text extraction or AI processing occurs yet.
+
+## 📄 Upload Flow (Milestone 2)
+
+```
+Select File → Client Validation → POST /upload → Server Validation → Success Metadata
+```
+
+Full details: [docs/upload.md](docs/upload.md)
+
+## 🔮 Roadmap
+
+| Milestone              | Status      |
+| ---------------------- | ----------- |
+| 1 – Project Foundation | ✅ Complete |
+| 2 – Material Upload    | ✅ Complete |
+| 3 – Text Extraction    | 🔜 Next     |
+| 4 – Gemini Integration | ⬜          |
+| 5 – Question Generator | ⬜          |
+| 6 – Result Viewer      | ⬜          |
+| 7 – PDF Export         | ⬜          |
+| 8 – UI Polish          | ⬜          |
+| 9 – Testing            | ⬜          |
+| 10 – Release v1.0      | ⬜          |
+
+## 🤝 Contributing
+
+OpenQuiz AI is an open-source project. Contributions, issues and feature requests are welcome.  
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) (if available) before submitting a pull request.
+
+## 📜 License
+
+MIT © OpenQuiz AI
+
+````
+
+### 2. `docs/upload.md` (baru)
+
+```markdown
+# Upload System Documentation
+
+## Overview
+The upload feature allows users to provide learning materials (PDF, DOCX, TXT) through a modern, responsive interface. The system performs validation on both client and server to ensure only valid files are accepted, and provides clear feedback throughout the process.
+
+## Architecture
+
+The upload flow is built with a layered architecture:
+
+````
+
+Frontend (React)
+│ UploadPage → UploadCard → FileDropzone / SelectedFile
+│ Validation: utils/validateFile.js
+│ Service: services/uploadService.js → api.js (Axios)
+│
+Backend (FastAPI)
+│ Route: api/upload.py
+│ Service: services/upload_service.py
+│ Validator: utils/file_validator.py
+│ Config: config.py
+
+````
+
+**Separation of concerns:**
+- **Frontend** handles UI states (idle, ready, uploading, success, error) and client-side validation.
+- **Backend** independently re-validates every upload for security, then returns file metadata.
+- No file is permanently stored; future milestones will add text extraction.
+
+## Upload Flow
+
+1. **User selects a file** via drag & drop or file browser.
+2. **Client-side validation** checks file extension (.pdf, .docx, .txt) and size ≤ 20 MB.
+   - If invalid, an error message is shown immediately; upload is disabled.
+   - If valid, the file card displays “Ready to upload” and the Upload button becomes active.
+3. **User clicks Upload** → `POST /upload` with multipart/form-data.
+4. **Server-side validation** performs the same checks (plus empty file detection) for security.
+5. On success, the frontend shows a success card with file metadata (name, size, type) and a note “Ready for Text Extraction” (future step).
+6. On failure, a user-friendly error message is displayed; the user can try again.
+
+## API Reference
+
+### `POST /upload`
+
+Upload a learning material file.
+
+- **Method:** `POST`
+- **Content-Type:** `multipart/form-data`
+- **Form field:** `file` (required)
+
+#### Success Response
+
+**Code:** `200 OK`
 
 ```json
 {
-  "topic": "HTML",
-  "material": "...",
-  "question": "...",
-  "choices": ["...", "...", "...", "..."],
-  "answer": "...",
-  "difficulty": "easy",
-  "type": "multiple_choice"
+  "success": true,
+  "message": "File uploaded successfully.",
+  "data": {
+    "filename": "lecture.pdf",
+    "content_type": "application/pdf",
+    "size": 245873
+  }
+}
+````
+
+#### Error Responses
+
+**400 Bad Request** – Missing or empty file.
+
+```json
+{
+  "success": false,
+  "message": "No file uploaded.",
+  "errors": {
+    "detail": "No file uploaded."
+  }
 }
 ```
 
-The dataset is intended for:
+**413 Request Entity Too Large** – File exceeds 20 MB.
 
-- AI training
-- Fine-tuning
-- Evaluation
-- Research
-- Benchmarking
+```json
+{
+  "success": false,
+  "message": "File exceeds the maximum upload size (20 MB).",
+  "errors": {
+    "detail": "File exceeds the maximum upload size (20 MB)."
+  }
+}
+```
 
----
+**415 Unsupported Media Type** – Invalid file extension.
 
-## 🚀 Vision
+```json
+{
+  "success": false,
+  "message": "Unsupported file type '.exe'. Allowed types: .pdf, .docx, .txt.",
+  "errors": {
+    "detail": "Unsupported file type '.exe'. Allowed types: .pdf, .docx, .txt."
+  }
+}
+```
 
-OpenQuiz AI is not just another AI application.
+## Validation Rules
 
-The long-term vision is to become a complete open-source ecosystem for AI-powered educational assessment.
+| Rule                                  | Client | Server | Error Message                                   |
+| ------------------------------------- | ------ | ------ | ----------------------------------------------- |
+| File must be provided                 | ✅     | ✅     | “No file uploaded.”                             |
+| Empty file (0 bytes)                  | ❌     | ✅     | “Uploaded file is empty.”                       |
+| Allowed extensions: .pdf, .docx, .txt | ✅     | ✅     | “Unsupported file type …”                       |
+| Maximum size 20 MB                    | ✅     | ✅     | “File exceeds the maximum upload size (20 MB).” |
 
-Instead of building only an application, this project aims to provide:
+> **Note:** Frontend validation improves user experience, but **backend validation is mandatory for security** – it cannot be bypassed.
 
-- AI models
-- Datasets
-- APIs
-- Tools
-- Research resources
-- Community contributions
+## Upload Lifecycle (UI States)
 
----
+| State         | Frontend Display                            | Backend                |
+| ------------- | ------------------------------------------- | ---------------------- |
+| **Idle**      | Dropzone, file browser                      | –                      |
+| **Ready**     | Selected file info + “Ready to upload”      | –                      |
+| **Uploading** | Spinner, progress bar, “Uploading…”         | Processing             |
+| **Success**   | File metadata + “Ready for Text Extraction” | File metadata returned |
+| **Error**     | Friendly error message, “Try Again”         | Validation failure     |
 
-## ❤️ Open Source
+## Supported File Types
 
-Everyone is welcome to contribute.
+| Format | Extension | MIME Type                                                               |
+| ------ | --------- | ----------------------------------------------------------------------- |
+| PDF    | .pdf      | application/pdf                                                         |
+| Word   | .docx     | application/vnd.openxmlformats-officedocument.wordprocessingml.document |
+| Text   | .txt      | text/plain                                                              |
 
-Ideas include:
+Other formats (images, archives, executables) are rejected with a clear message.
 
-- New datasets
-- New AI models c
-- Better prompts
-- UI improvements
-- Bug fixes
-- Documentation
+## Future Enhancements
 
----
+In the next milestones, the upload system will be extended to:
 
-## 📄 License
+- **Text Extraction** – Extract plain text from uploaded documents.
+- **AI Processing** – Send extracted text to Google Gemini for question generation.
+- **Question Preview & Export** – Display generated questions and download as PDF.
 
-MIT License
+The upload API is designed to accommodate these additions with minimal changes – the validation layer and service structure remain unchanged.
