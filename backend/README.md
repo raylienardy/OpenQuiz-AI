@@ -7,6 +7,6 @@ FastAPI backend for the OpenQuiz AI platform.
 1. Create a virtual environment:
    ```bash
    python -m venv venv
-   source venv/bin/activate  # Linux/macOS
+   source .venv/bin/activate  # Linux/macOS
    venv\Scripts\activate     # Windows
    ```
