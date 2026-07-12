@@ -1,6 +1,7 @@
 import { useState } from "react";
 import UploadCard from "../components/UploadCard";
 import { uploadFile } from "../services/uploadService";
+import { generateQuestions } from "../services/questionService";
 import { validateFile } from "../utils/validateFile";
 import "./UploadPage.css";
 
@@ -9,18 +10,19 @@ export default function UploadPage() {
   const [uploadState, setUploadState] = useState("idle"); // idle | uploading | success | error
   const [uploadResult, setUploadResult] = useState(null);
   const [uploadError, setUploadError] = useState("");
-  const [validationError, setValidationError] = useState(null); // client-side validation
+  const [validationError, setValidationError] = useState(null);
+  const [generationState, setGenerationState] = useState("idle"); // idle | generating | success | error
+  const [generatedText, setGeneratedText] = useState("");
 
   const handleFileSelect = (file) => {
-    // Validasi di sisi klien segera setelah file dipilih
     const error = validateFile(file);
     setSelectedFile(file);
     setValidationError(error);
-
-    // Reset upload state ketika file baru dipilih
     setUploadState("idle");
     setUploadResult(null);
     setUploadError("");
+    setGenerationState("idle");
+    setGeneratedText("");
   };
 
   const handleRemoveFile = () => {
@@ -29,19 +31,22 @@ export default function UploadPage() {
     setUploadState("idle");
     setUploadResult(null);
     setUploadError("");
+    setGenerationState("idle");
+    setGeneratedText("");
   };
 
   const handleUpload = async () => {
     if (!selectedFile || validationError) return;
-
     setUploadState("uploading");
     setUploadError("");
     setUploadResult(null);
+    setGenerationState("idle");
+    setGeneratedText("");
 
     try {
       const data = await uploadFile(selectedFile);
       setUploadState("success");
-      setUploadResult(data.data); // ✅ perbaikan: ambil data.data
+      setUploadResult(data.data); // data.data berisi text, filename, dll.
     } catch (error) {
       setUploadState("error");
       if (error.response) {
@@ -58,12 +63,34 @@ export default function UploadPage() {
     }
   };
 
+  const handleGenerate = async () => {
+    if (!uploadResult || !uploadResult.text) return;
+    setGenerationState("generating");
+    try {
+      const payload = {
+        text: uploadResult.text,
+        question_type: "multiple_choice", // default, bisa dibuat pilihan nanti
+        number_of_questions: 5,
+        difficulty: "medium",
+        language: "id",
+      };
+      const data = await generateQuestions(payload);
+      setGenerationState("success");
+      setGeneratedText(data.raw_response);
+    } catch (error) {
+      setGenerationState("error");
+      setGeneratedText(error.response?.data?.detail || "Generation failed.");
+    }
+  };
+
   const handleReset = () => {
     setSelectedFile(null);
     setValidationError(null);
     setUploadState("idle");
     setUploadResult(null);
     setUploadError("");
+    setGenerationState("idle");
+    setGeneratedText("");
   };
 
   return (
@@ -88,6 +115,34 @@ export default function UploadPage() {
           onReset={handleReset}
         />
       </div>
+
+      {/* Tombol Generate tampil setelah upload sukses dan teks tersedia */}
+      {uploadState === "success" && uploadResult && uploadResult.text && (
+        <div className="generation-section">
+          <button
+            className="generate-btn"
+            onClick={handleGenerate}
+            disabled={generationState === "generating"}
+          >
+            {generationState === "generating"
+              ? "Generating..."
+              : "Generate Questions"}
+          </button>
+
+          {generationState === "generating" && (
+            <div className="loading-spinner">⏳ Generating questions...</div>
+          )}
+          {generationState === "success" && (
+            <div className="generated-content">
+              <h3>Generated Output (Raw)</h3>
+              <pre className="raw-response">{generatedText}</pre>
+            </div>
+          )}
+          {generationState === "error" && (
+            <div className="error-message">❌ {generatedText}</div>
+          )}
+        </div>
+      )}
 
       <div className="supported-info">
         <p>

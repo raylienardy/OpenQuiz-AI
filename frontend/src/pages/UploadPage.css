@@ -223,3 +223,57 @@
   color: #6c757d;
   line-height: 1.5;
 }
+
+/* Tambahan untuk tombol generate dan tampilan hasil */
+.generation-section {
+  margin-top: 2rem;
+}
+
+.generate-btn {
+  background-color: #6f42c1;
+  color: white;
+  border: none;
+  padding: 0.6rem 2rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.generate-btn:hover:not(:disabled) {
+  background-color: #5a32a3;
+}
+
+.generate-btn:disabled {
+  background-color: #adb5bd;
+  cursor: not-allowed;
+}
+
+.generated-content {
+  margin-top: 1rem;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.raw-response {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: monospace;
+  font-size: 0.9rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.error-message {
+  margin-top: 0.5rem;
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.loading-spinner {
+  margin-top: 0.5rem;
+  color: #6c757d;
+}
