@@ -1,10 +1,11 @@
-"""
-API endpoint untuk mengajukan permintaan generasi pertanyaan.
-"""
-
 from fastapi import APIRouter, HTTPException, Query
 from ..question_generator.models import QuestionRequest
 from ..services.question_service import QuestionService
+from ..question_generator.exceptions import (
+    QuestionParserError,
+    QuestionFormatError,
+    QuestionGenerationError,
+)
 from ..ai.exceptions import (
     AIAuthenticationError,
     AIConnectionError,
@@ -17,21 +18,15 @@ from ..ai.exceptions import (
 router = APIRouter(prefix="/questions", tags=["Question Generation"])
 
 @router.post("/generate")
-async def generate_questions(
-    request: QuestionRequest,
-    debug: bool = Query(False, description="Sertakan prompt yang digunakan (hanya untuk pengembangan)"),
-):
-    """
-    Menghasilkan pertanyaan berdasarkan teks yang diberikan.
-
-    Request body mengikuti model QuestionRequest.
-    """
-    # Inisialisasi service (dependency injection bisa dilakukan di sini)
+async def generate_questions(request: QuestionRequest, debug: bool = Query(False)):
     question_service = QuestionService()
-
     try:
-        # generate_questions akan mengembalikan AIResponse (raw)
-        ai_response = await question_service.generate_questions(request)
+        # Sekarang mengembalikan QuestionResponse (Pydantic)
+        result = await question_service.generate_questions(request)
+    except (QuestionParserError, QuestionFormatError) as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except QuestionGenerationError as e:
+        raise HTTPException(status_code=500, detail=str(e))
     except AIAuthenticationError as e:
         raise HTTPException(status_code=401, detail=str(e))
     except AIRateLimitError as e:
@@ -47,17 +42,15 @@ async def generate_questions(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
-    # Bangun respons
+    # Respons sukses dengan data pertanyaan terstruktur
     response = {
         "success": True,
-        "provider": ai_response.provider,
-        "model": ai_response.metadata.get("model", "unknown"),
-        "raw_response": ai_response.response_text,
+        "message": "Questions generated successfully.",
+        "provider": result.provider,
+        "model": result.model,
+        "data": result.dict(by_alias=False, exclude={"provider", "model", "generation_time", "metadata"}),
     }
-    if debug:
-        # Prompt aman untuk debugging, tapi hanya jika diminta
-        prompt = question_service._last_prompt  # kita simpan prompt di service
-        if prompt:
-            response["prompt"] = prompt
+    if debug and question_service._last_prompt:
+        response["prompt"] = question_service._last_prompt
 
     return response
