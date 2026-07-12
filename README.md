@@ -44,8 +44,6 @@ cp .env.example .env           # edit .env, choose your AI provider
 uvicorn app.main:app --reload
 ```
 
-````
-
 **Minimal `.env` for Groq:**
 
 ```
@@ -114,4 +112,7 @@ openquiz-ai/
 ## 📜 License
 
 MIT
-````
+
+```
+
+```
