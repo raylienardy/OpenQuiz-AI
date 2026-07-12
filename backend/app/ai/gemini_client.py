@@ -1,12 +1,7 @@
-"""
-Gemini AI Client – inisialisasi dan komunikasi dengan Google Gemini.
-"""
-
 import logging
 from typing import Optional
-
-import google.generativeai as genai
-from google.generativeai.types import GenerationConfig
+from google import genai
+from google.genai.types import GenerateContentConfig
 
 from .base_client import BaseAIClient
 from .models import AIRequest, AIResponse
@@ -21,63 +16,51 @@ from ..config import get_settings
 
 logger = logging.getLogger(__name__)
 
-
 class GeminiClient(BaseAIClient):
-    """Implementasi Gemini menggunakan Google Generative AI SDK."""
-
     def __init__(self):
-        self._model: Optional[genai.GenerativeModel] = None
-        self._initialized = False
-        # Baca model dari konfigurasi
-        settings = get_settings()
-        self._model_name = settings.gemini_model
+        self._client: Optional[genai.Client] = None
+        self._model_name: Optional[str] = None
 
     async def initialize(self) -> None:
-        if self._initialized:
+        if self._client:
             return
 
         settings = get_settings()
-        api_key = settings.gemini_api_key
+        api_key = settings.gemini_api_key.strip()
+        self._model_name = settings.gemini_model.strip()
 
-        if not api_key or not api_key.strip():
-            raise AIAuthenticationError(
-                "Gemini API key is missing or empty. "
-                "Set GEMINI_API_KEY in your .env file."
-            )
+        if not api_key:
+            raise AIAuthenticationError("Gemini API key is missing. Set GEMINI_API_KEY in .env.")
+        if not self._model_name:
+            raise AIConnectionError("Gemini model is not configured. Set GEMINI_MODEL in .env.")
 
         try:
-            genai.configure(api_key=api_key.strip())
-            self._model = genai.GenerativeModel(self._model_name)
-            self._initialized = True
-            logger.info("Gemini provider initialized successfully.")
+            self._client = genai.Client(api_key=api_key)
+            logger.info(f"Gemini client initialized for model '{self._model_name}'.")
         except Exception as e:
-            raise AIConnectionError(
-                f"Failed to initialize Gemini client: {str(e)}"
-            ) from e
+            raise AIConnectionError(f"Failed to initialize Gemini client: {str(e)}") from e
 
     async def generate(self, request: AIRequest) -> AIResponse:
-        if not self._initialized:
-            raise AIConnectionError("Gemini client is not initialized. Call initialize() first.")
+        if not self._client:
+            raise AIConnectionError("Gemini client not initialized.")
 
         try:
-            generation_config = GenerationConfig(
+            config = GenerateContentConfig(
                 temperature=request.temperature,
                 max_output_tokens=request.max_tokens,
                 candidate_count=1,
             )
-
-            response = await self._model.generate_content_async(
+            response = self._client.models.generate_content(
+                model=self._model_name,
                 contents=request.prompt,
-                generation_config=generation_config,
+                config=config,
             )
 
             response_text = ""
-            if response.candidates and len(response.candidates) > 0:
+            if response.candidates:
                 candidate = response.candidates[0]
                 if candidate.content and candidate.content.parts:
-                    response_text = "".join(
-                        part.text for part in candidate.content.parts if hasattr(part, 'text')
-                    )
+                    response_text = "".join(part.text for part in candidate.content.parts if hasattr(part, 'text'))
 
             return AIResponse(
                 response_text=response_text,
@@ -87,29 +70,29 @@ class GeminiClient(BaseAIClient):
                     "finish_reason": str(candidate.finish_reason) if response.candidates else None,
                 },
             )
-        except Exception as e:
-            error_msg = str(e).lower()
-            # Klasifikasikan berdasarkan kata kunci dalam pesan error
-            if any(kw in error_msg for kw in ("authentication", "api key", "unauthorized", "invalid key")):
-                raise AIAuthenticationError(f"Authentication failed: {str(e)}") from e
-            elif "rate limit" in error_msg or "quota" in error_msg:
-                raise AIRateLimitError(f"Rate limit exceeded: {str(e)}") from e
-            elif "timeout" in error_msg or "timed out" in error_msg:
-                raise AITimeoutError(f"Request timed out: {str(e)}") from e
-            elif "connection" in error_msg or "network" in error_msg or "unreachable" in error_msg:
-                raise AIConnectionError(f"Connection error: {str(e)}") from e
+        except genai.errors.APIError as e:
+            # Klasifikasi error berdasarkan pesan/kode
+            error_str = str(e).lower()
+            if "authentication" in error_str or "api key" in error_str:
+                raise AIAuthenticationError(str(e)) from e
+            elif "rate" in error_str and "limit" in error_str:
+                raise AIRateLimitError(str(e)) from e
+            elif "timeout" in error_str:
+                raise AITimeoutError(str(e)) from e
             else:
-                raise AIResponseError(f"Gemini API error: {str(e)}") from e
+                raise AIResponseError(str(e)) from e
+        except Exception as e:
+            raise AIConnectionError(f"Unexpected error: {str(e)}") from e
 
     async def health_check(self) -> bool:
-        if not self._initialized:
+        if not self._client:
             return False
         try:
-            request = AIRequest(prompt="Ping", max_tokens=5)
-            response = await self.generate(request)
-            return bool(response.response_text)
+            req = AIRequest(prompt="Ping", max_tokens=5)
+            resp = await self.generate(req)
+            return bool(resp.response_text)
         except Exception:
             return False
 
     async def close(self) -> None:
-        pass
+        self._client = None

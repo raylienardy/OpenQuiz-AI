@@ -3,19 +3,18 @@ from pydantic import ConfigDict
 from functools import lru_cache
 
 class Settings(BaseSettings):
-    """Application settings."""
     model_config = ConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     # Server
     host: str = "0.0.0.0"
     port: int = 8000
 
-    # Gemini API
-    gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"   # default model
+    # AI Provider (wajib)
+    ai_provider: str   # tidak ada default, harus ada di .env
 
-    # AI Provider
-    ai_provider: str = "gemini"
+    # Gemini configuration
+    gemini_api_key: str = ""
+    gemini_model: str   # wajib, tidak ada default
 
     # CORS
     cors_origins: list[str] = ["http://localhost:5173"]
