@@ -1,6 +1,8 @@
 from pydantic_settings import BaseSettings
-from pydantic import ConfigDict
+from pydantic import ConfigDict, field_validator
 from functools import lru_cache
+
+SUPPORTED_PROVIDERS = ["gemini", "groq"]
 
 class Settings(BaseSettings):
     model_config = ConfigDict(env_file=".env", env_file_encoding="utf-8")
@@ -10,15 +12,26 @@ class Settings(BaseSettings):
     port: int = 8000
 
     # AI Provider (wajib)
-    ai_provider: str   # "gemini" atau "groq"
+    ai_provider: str
+
+    @field_validator("ai_provider")
+    @classmethod
+    def validate_provider(cls, v: str) -> str:
+        v_lower = v.lower().strip()
+        if v_lower not in SUPPORTED_PROVIDERS:
+            raise ValueError(
+                f"Unsupported AI provider '{v}'. "
+                f"Supported providers: {', '.join(SUPPORTED_PROVIDERS)}."
+            )
+        return v_lower
 
     # Gemini
     gemini_api_key: str = ""
-    gemini_model: str = ""   # wajib jika provider=gemini
+    gemini_model: str = ""
 
     # Groq
     groq_api_key: str = ""
-    groq_model: str = "llama-3.1-8b-instant"   # model default Groq
+    groq_model: str = "llama-3.1-8b-instant"
 
     # CORS
     cors_origins: list[str] = ["http://localhost:5173"]
