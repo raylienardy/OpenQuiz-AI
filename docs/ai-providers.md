@@ -65,7 +65,3 @@ No changes are required in routes, services, or business logic.
 | `API key missing`         | The required key (e.g., `GROQ_API_KEY`) is not set in `.env`   |
 | 429 Rate Limit            | Free tier limits reached – wait, or switch to another provider |
 | Connection error          | Internet unavailable – try Mock provider for offline work      |
-
-```
-
-```
