@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 from pydantic import ConfigDict, field_validator
 from functools import lru_cache
 
-SUPPORTED_PROVIDERS = ["gemini", "groq"]
+SUPPORTED_PROVIDERS = ["gemini", "groq", "mock"]
 
 class Settings(BaseSettings):
     model_config = ConfigDict(env_file=".env", env_file_encoding="utf-8")

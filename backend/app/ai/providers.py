@@ -2,12 +2,14 @@ from typing import Dict, Type
 from .base_client import BaseAIClient
 from .gemini_client import GeminiClient
 from .groq_client import GroqClient
+from .mock_client import MockClient
 
 class AIProviderRegistry:
     def __init__(self):
         self._providers: Dict[str, Type[BaseAIClient]] = {
             "gemini": GeminiClient,
             "groq": GroqClient,
+            "mock": MockClient,   # <-- tambahan
         }
 
     def get_client(self, provider_name: str) -> BaseAIClient:

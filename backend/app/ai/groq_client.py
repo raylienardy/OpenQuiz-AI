@@ -18,9 +18,12 @@ class GroqClient(BaseAIClient):
     def __init__(self):
         self._client: Optional[AsyncGroq] = None
         self._model_name: Optional[str] = None
+        self._initialized = False   # <-- tambahan
 
     async def initialize(self) -> None:
         if self._client:
+            return
+        if self._initialized:
             return
         settings = get_settings()
         api_key = settings.groq_api_key.strip()
@@ -31,6 +34,7 @@ class GroqClient(BaseAIClient):
             raise AIConnectionError("Groq model is not configured. Set GROQ_MODEL in .env.")
         try:
             self._client = AsyncGroq(api_key=api_key)
+            self._initialized = True
             logger.info(f"Groq client initialized for model '{self._model_name}'.")
         except Exception as e:
             raise AIConnectionError(f"Failed to initialize Groq client: {str(e)}") from e

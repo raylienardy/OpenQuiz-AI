@@ -20,9 +20,12 @@ class GeminiClient(BaseAIClient):
     def __init__(self):
         self._client: Optional[genai.Client] = None
         self._model_name: Optional[str] = None
+        self._initialized = False   # <-- tambahan
 
     async def initialize(self) -> None:
         if self._client:
+            return
+        if self._initialized:
             return
 
         settings = get_settings()
@@ -36,6 +39,7 @@ class GeminiClient(BaseAIClient):
 
         try:
             self._client = genai.Client(api_key=api_key)
+            self._initialized = True
             logger.info(f"Gemini client initialized for model '{self._model_name}'.")
         except Exception as e:
             raise AIConnectionError(f"Failed to initialize Gemini client: {str(e)}") from e

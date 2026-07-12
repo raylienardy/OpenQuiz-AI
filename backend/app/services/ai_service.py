@@ -17,6 +17,6 @@ class AIService:
         logger.info(f"AI provider '{self.provider_name}' initialized and ready.")
 
     async def generate(self, request: AIRequest) -> AIResponse:
-        if not self.client._client:  # asumsi setiap client punya atribut _client
+        if not self.client._initialized:  # <-- gunakan flag
             await self.initialize()
         return await self.client.generate(request)
