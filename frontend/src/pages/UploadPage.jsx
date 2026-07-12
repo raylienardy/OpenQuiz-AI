@@ -32,7 +32,6 @@ export default function UploadPage() {
   };
 
   const handleUpload = async () => {
-    // Jangan upload jika validasi gagal (seharusnya tombol sudah disabled, tapi double-check)
     if (!selectedFile || validationError) return;
 
     setUploadState("uploading");
@@ -42,7 +41,7 @@ export default function UploadPage() {
     try {
       const data = await uploadFile(selectedFile);
       setUploadState("success");
-      setUploadResult(data.file);
+      setUploadResult(data.data); // ✅ perbaikan: ambil data.data
     } catch (error) {
       setUploadState("error");
       if (error.response) {
