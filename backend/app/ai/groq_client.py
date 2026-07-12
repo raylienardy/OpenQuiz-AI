@@ -1,34 +1,20 @@
-"""
-Groq AI Client – integrasi dengan Groq Cloud menggunakan SDK resmi.
-"""
-
 import logging
+import time
 from typing import Optional
-from groq import AsyncGroq
-from groq import (
-    APIError,
-    AuthenticationError,
-    RateLimitError,
-    APITimeoutError,
-    APIConnectionError as GroqAPIConnectionError,
-)
+from groq import AsyncGroq, APIError, AuthenticationError, RateLimitError, APITimeoutError
+from groq import APIConnectionError as GroqAPIConnectionError
 
 from .base_client import BaseAIClient
 from .models import AIRequest, AIResponse
 from .exceptions import (
-    AIAuthenticationError,
-    AIConnectionError,
-    AIRateLimitError,
-    AIResponseError,
-    AITimeoutError,
+    AIAuthenticationError, AIConnectionError, AIRateLimitError,
+    AIResponseError, AITimeoutError,
 )
 from ..config import get_settings
 
 logger = logging.getLogger(__name__)
 
 class GroqClient(BaseAIClient):
-    """Implementasi Groq menggunakan SDK `groq`."""
-
     def __init__(self):
         self._client: Optional[AsyncGroq] = None
         self._model_name: Optional[str] = None
@@ -36,51 +22,46 @@ class GroqClient(BaseAIClient):
     async def initialize(self) -> None:
         if self._client:
             return
-
         settings = get_settings()
         api_key = settings.groq_api_key.strip()
         self._model_name = settings.groq_model.strip()
-
         if not api_key:
-            raise AIAuthenticationError(
-                "Groq API key is missing. Set GROQ_API_KEY in .env."
-            )
+            raise AIAuthenticationError("Groq API key is missing. Set GROQ_API_KEY in .env.")
         if not self._model_name:
-            raise AIConnectionError(
-                "Groq model is not configured. Set GROQ_MODEL in .env."
-            )
-
+            raise AIConnectionError("Groq model is not configured. Set GROQ_MODEL in .env.")
         try:
             self._client = AsyncGroq(api_key=api_key)
             logger.info(f"Groq client initialized for model '{self._model_name}'.")
         except Exception as e:
-            raise AIConnectionError(
-                f"Failed to initialize Groq client: {str(e)}"
-            ) from e
+            raise AIConnectionError(f"Failed to initialize Groq client: {str(e)}") from e
 
     async def generate(self, request: AIRequest) -> AIResponse:
         if not self._client:
             raise AIConnectionError("Groq client not initialized.")
-
+        start_time = time.time()
+        logger.info("Groq request started.")
         try:
-            # Panggil Groq Chat Completion (async)
             response = await self._client.chat.completions.create(
                 model=self._model_name,
                 messages=[{"role": "user", "content": request.prompt}],
                 temperature=request.temperature,
                 max_tokens=request.max_tokens,
             )
-
+            latency = int((time.time() - start_time) * 1000)
             response_text = response.choices[0].message.content if response.choices else ""
-
-            return AIResponse(
-                response_text=response_text,
-                provider="groq",
-                metadata={
-                    "model": self._model_name,
-                    "finish_reason": response.choices[0].finish_reason if response.choices else None,
-                },
-            )
+            metadata = {
+                "model": self._model_name,
+                "finish_reason": response.choices[0].finish_reason if response.choices else None,
+                "latency_ms": latency,
+            }
+            if hasattr(response, 'usage') and response.usage:
+                metadata["usage"] = {
+                    "prompt_tokens": response.usage.prompt_tokens,
+                    "completion_tokens": response.usage.completion_tokens,
+                    "total_tokens": response.usage.total_tokens,
+                }
+            logger.info(f"Groq response received in {latency}ms.")
+            return AIResponse(response_text=response_text, provider="groq", metadata=metadata)
         except AuthenticationError as e:
             raise AIAuthenticationError(str(e)) from e
         except RateLimitError as e:
@@ -95,6 +76,7 @@ class GroqClient(BaseAIClient):
             raise AIConnectionError(f"Unexpected error: {str(e)}") from e
 
     async def health_check(self) -> bool:
+        """Health check menggunakan prompt kecil (memakai token)."""
         if not self._client:
             return False
         try:
