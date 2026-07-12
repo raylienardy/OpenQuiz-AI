@@ -10,16 +10,20 @@ class Settings(BaseSettings):
     port: int = 8000
 
     # AI Provider (wajib)
-    ai_provider: str   # tidak ada default, harus ada di .env
+    ai_provider: str   # "gemini" atau "groq"
 
-    # Gemini configuration
+    # Gemini
     gemini_api_key: str = ""
-    gemini_model: str   # wajib, tidak ada default
+    gemini_model: str = ""   # wajib jika provider=gemini
+
+    # Groq
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.1-8b-instant"   # model default Groq
 
     # CORS
     cors_origins: list[str] = ["http://localhost:5173"]
 
-    # File upload validation
+    # File upload
     max_upload_size: int = 20 * 1024 * 1024
     allowed_extensions: list[str] = [".pdf", ".docx", ".txt"]
 
