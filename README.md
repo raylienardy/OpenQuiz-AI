@@ -3,30 +3,28 @@
 AI-powered question generation platform (Version 1.0 MVP).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Status: Milestone 2 Complete](https://img.shields.io/badge/status-milestone%202-brightgreen)](#)
 
-## 🚀 Current Features (v1.0 in Progress)
+## 🚀 Current Features
 
-- ✅ **Project Foundation** – React + Vite frontend, FastAPI backend, health-check communication.
-- ✅ **Upload System** – Drag & drop, file selection, client & server validation, clear feedback states.
-  - Supported formats: **PDF**, **DOCX**, **TXT**
-  - Maximum file size: **20 MB**
-- ⬜ Text Extraction (next milestone)
-- ⬜ AI Question Generation (Gemini)
-- ⬜ Result Viewer & PDF Export
+- ✅ **Project Foundation** – React + Vite frontend, FastAPI backend
+- ✅ **Upload System** – PDF, DOCX, TXT upload with validation & preview
+- ✅ **Document Extraction** – Text extraction & cleaning pipeline
+- ✅ **AI Provider Architecture** – Gemini, Groq, Mock (switch via `.env`)
 
-## 📂 Project Structure
+## 🤖 AI Providers
 
-```
+OpenQuiz AI uses a provider-independent architecture. Switch providers by changing one line in `.env`.
 
-openquiz-ai/
-├── backend/ # FastAPI server (Python)
-├── frontend/ # React SPA (Vite + JavaScript)
-├── docs/ # Documentation
-├── datasets/ # Future open datasets
-└── examples/ # Usage examples
+| Provider   | Requires API Key | Internet | Best For                             |
+| ---------- | ---------------- | -------- | ------------------------------------ |
+| **Groq**   | Yes (free)       | Yes      | Fast development, generous free tier |
+| **Gemini** | Yes (free)       | Yes      | Google ecosystem                     |
+| **Mock**   | No               | No       | Offline development & testing        |
 
-```
+➡️ **Recommended for development:** Groq (fast & free tier)  
+➡️ **For UI/frontend work:** Mock (no internet needed)
+
+📖 **Full documentation:** [docs/ai-providers.md](docs/ai-providers.md)
 
 ## ⚡ Quick Start
 
@@ -34,218 +32,401 @@ openquiz-ai/
 
 - Python 3.10+
 - Node.js 18+
-- Git
 
-### 1. Clone & setup backend
+### 1. Backend
 
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate      # or venv\Scripts\activate on Windows
+source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env           # add your GEMINI_API_KEY (optional for now)
+cp .env.example .env           # edit .env, choose your AI provider
 uvicorn app.main:app --reload
 ```
 
-API runs at [http://localhost:8000](http://localhost:8000).
+**Minimal `.env` for Groq:**
 
-### 2. Setup frontend
+```
+AI_PROVIDER=groq
+GROQ_API_KEY=gsk_your_key_here
+```
+
+**For Gemini:**
+
+```
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your_key_here
+GEMINI_MODEL=models/gemini-2.0-flash
+```
+
+**For offline development:**
+
+```
+AI_PROVIDER=mock
+```
+
+### 2. Frontend
 
 ```bash
 cd frontend
 npm install
-cp .env.example .env           # adjust VITE_API_URL if needed
 npm run dev
 ```
 
-App opens at [http://localhost:5173](http://localhost:5173).  
-The home page shows backend connectivity status.  
-Navigate to `/upload` to test the upload feature.
+Visit `http://localhost:5173`
 
-### 3. Verify upload
+### 3. Verify AI Connection
 
-Drag a PDF, DOCX, or TXT file onto the upload page or use the file browser.  
-After client-side validation, click **Upload** – the backend will validate again and return file metadata.  
-No text extraction or AI processing occurs yet.
-
-## 📄 Upload Flow (Milestone 2)
-
-```
-Select File → Client Validation → POST /upload → Server Validation → Success Metadata
+```bash
+curl http://localhost:8000/ai/test
 ```
 
-Full details: [docs/upload.md](docs/upload.md)
+## 📂 Project Structure
+
+```
+openquiz-ai/
+├── backend/        # FastAPI server
+├── frontend/       # React SPA
+├── docs/           # Documentation
+└── datasets/       # Future datasets
+```
+
+## 📖 Documentation
+
+- [AI Providers](docs/ai-providers.md)
+- [Configuration Guide](docs/configuration.md)
+- [Gemini Setup](docs/gemini.md)
+- [Groq Setup](docs/groq.md)
+- [Mock Provider](docs/mock.md)
 
 ## 🔮 Roadmap
 
-| Milestone              | Status      |
-| ---------------------- | ----------- |
-| 1 – Project Foundation | ✅ Complete |
-| 2 – Material Upload    | ✅ Complete |
-| 3 – Text Extraction    | 🔜 Next     |
-| 4 – Gemini Integration | ⬜          |
-| 5 – Question Generator | ⬜          |
-| 6 – Result Viewer      | ⬜          |
-| 7 – PDF Export         | ⬜          |
-| 8 – UI Polish          | ⬜          |
-| 9 – Testing            | ⬜          |
-| 10 – Release v1.0      | ⬜          |
-
-## 🤝 Contributing
-
-OpenQuiz AI is an open-source project. Contributions, issues and feature requests are welcome.  
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) (if available) before submitting a pull request.
+| Milestone                   | Status |
+| --------------------------- | ------ |
+| 1 – Project Foundation      | ✅     |
+| 2 – Material Upload         | ✅     |
+| 3 – Document Extraction     | ✅     |
+| 4 – AI Provider Integration | ✅     |
+| 5 – Question Generator      | 🔜     |
 
 ## 📜 License
 
-MIT © OpenQuiz AI
+MIT
 
 ````
 
-### 2. `docs/upload.md` (baru)
+---
+
+### 3. Dokumentasi Baru
+
+#### `docs/ai-providers.md`
 
 ```markdown
-# Upload System Documentation
+# AI Provider System
 
 ## Overview
-The upload feature allows users to provide learning materials (PDF, DOCX, TXT) through a modern, responsive interface. The system performs validation on both client and server to ensure only valid files are accepted, and provides clear feedback throughout the process.
+
+OpenQuiz AI uses a **provider-independent architecture** for AI services. This means the application code never depends on a specific AI vendor (Google, Groq, OpenAI). Instead, all providers implement the same interface (`BaseAIClient`), and the active provider is chosen via environment variable.
+
+## Why Provider-Independent?
+
+- **No vendor lock-in** – switch providers without changing code
+- **Easy to add new providers** – just implement one interface
+- **Offline development** – use Mock provider when no internet
+- **Future-proof** – supports Ollama, OpenAI, Claude, etc. later
 
 ## Architecture
 
-The upload flow is built with a layered architecture:
-
 ````
 
-Frontend (React)
-│ UploadPage → UploadCard → FileDropzone / SelectedFile
-│ Validation: utils/validateFile.js
-│ Service: services/uploadService.js → api.js (Axios)
+Application
 │
-Backend (FastAPI)
-│ Route: api/upload.py
-│ Service: services/upload_service.py
-│ Validator: utils/file_validator.py
-│ Config: config.py
+▼
+AIService (reads AI_PROVIDER from .env)
+│
+▼
+Provider Registry (maps name → class)
+│
+├── "gemini" → GeminiClient
+├── "groq" → GroqClient
+└── "mock" → MockClient
+
+```
+
+All clients return `AIResponse`, so the rest of the application never knows which provider is active.
+
+## Available Providers
+
+| Provider | Key Required | Internet | Use Case |
+|----------|-------------|----------|----------|
+| **groq** | Yes (free) | Yes | Recommended for development |
+| **gemini** | Yes (free) | Yes | Google ecosystem users |
+| **mock** | No | No | Offline development, testing |
+
+## How to Switch Providers
+
+Just change `AI_PROVIDER` in `.env` and restart the backend.
+
+## Adding a New Provider
+
+1. Create a new class inheriting from `BaseAIClient` (see `backend/app/ai/base_client.py`)
+2. Implement `initialize()`, `generate()`, `health_check()`, `close()`
+3. Register it in `backend/app/ai/providers.py`
+4. Add the provider name to `SUPPORTED_PROVIDERS` in `backend/app/config.py`
+5. Update `.env.example` with new environment variables
+
+No changes needed in:
+- API routes
+- AIService
+- Business logic
+- Frontend
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| "Unsupported AI provider" | Check `AI_PROVIDER` spelling in `.env` |
+| "API key is missing" | Add `GROQ_API_KEY` or `GEMINI_API_KEY` to `.env` |
+| 429 Rate Limit | Wait and retry, or switch to another provider |
+| Connection error | Check internet, firewall, or use Mock provider |
+```
+
+#### `docs/gemini.md`
+
+````markdown
+# Gemini Provider
+
+## Overview
+
+Google Gemini is a large language model available through Google AI Studio.
+
+## Advantages
+
+- Strong reasoning capabilities
+- Good for complex question generation
+- Large context window (1M tokens for Flash)
+
+## Limitations
+
+- Strict rate limits on free tier (5 RPM for some models)
+- Quota resets periodically
+- Requires Google account
+
+## Getting an API Key
+
+1. Visit [Google AI Studio](https://aistudio.google.com/apikey)
+2. Sign in with your Google account
+3. Click "Create API Key"
+4. Copy the key
+
+## Configuration
+
+Add to `.env`:
+
+```env
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your_key_here
+GEMINI_MODEL=models/gemini-2.0-flash
+```
+````
+
+To find available models, run:
+
+```bash
+python list_models.py
+```
+
+(See `backend/list_models.py`)
+
+## Rate Limits
+
+Free tier: 5 requests per minute (varies by model). If you hit limits, switch to Groq or Mock for development.
+
+## Common Issues
+
+| Issue                | Solution                                               |
+| -------------------- | ------------------------------------------------------ |
+| 429 Rate Limit       | Wait 1 minute, or use Groq                             |
+| 404 Model not found  | Update `GEMINI_MODEL` to a model from `list_models.py` |
+| Authentication error | Verify API key is correct                              |
 
 ````
 
-**Separation of concerns:**
-- **Frontend** handles UI states (idle, ready, uploading, success, error) and client-side validation.
-- **Backend** independently re-validates every upload for security, then returns file metadata.
-- No file is permanently stored; future milestones will add text extraction.
+#### `docs/groq.md`
 
-## Upload Flow
+```markdown
+# Groq Provider
 
-1. **User selects a file** via drag & drop or file browser.
-2. **Client-side validation** checks file extension (.pdf, .docx, .txt) and size ≤ 20 MB.
-   - If invalid, an error message is shown immediately; upload is disabled.
-   - If valid, the file card displays “Ready to upload” and the Upload button becomes active.
-3. **User clicks Upload** → `POST /upload` with multipart/form-data.
-4. **Server-side validation** performs the same checks (plus empty file detection) for security.
-5. On success, the frontend shows a success card with file metadata (name, size, type) and a note “Ready for Text Extraction” (future step).
-6. On failure, a user-friendly error message is displayed; the user can try again.
+## Overview
 
-## API Reference
+Groq provides ultra-fast inference for open-source models like Llama. It's recommended for OpenQuiz AI development due to its generous free tier and high speed.
 
-### `POST /upload`
+## Advantages
+- Very fast (up to 300+ tokens/second)
+- Generous free tier
+- Good for rapid iteration
+- Supports Llama, Mixtral, etc.
 
-Upload a learning material file.
+## Getting an API Key
 
-- **Method:** `POST`
-- **Content-Type:** `multipart/form-data`
-- **Form field:** `file` (required)
+1. Visit [Groq Console](https://console.groq.com)
+2. Sign up with email or Google
+3. Go to "API Keys"
+4. Create a new key and copy it
 
-#### Success Response
+## Configuration
 
-**Code:** `200 OK`
+Add to `.env`:
+
+```env
+AI_PROVIDER=groq
+GROQ_API_KEY=gsk_your_key_here
+GROQ_MODEL=llama-3.1-8b-instant
+````
+
+## Recommended Models
+
+| Model                     | Best For                     |
+| ------------------------- | ---------------------------- |
+| `llama-3.1-8b-instant`    | Fast, free, good quality     |
+| `llama-3.3-70b-versatile` | Better quality, rate limited |
+
+## Free Tier
+
+- No credit card required
+- Generous RPM/TPM limits
+- Check [Groq documentation](https://console.groq.com/docs/rate-limits) for current limits
+
+## Why Groq is Recommended
+
+For OpenQuiz AI development, Groq offers the best balance of speed, cost (free), and availability. Unlike Gemini, its free tier rarely blocks development due to quota exhaustion.
+
+````
+
+#### `docs/mock.md`
+
+```markdown
+# Mock Provider
+
+## Overview
+
+Mock provider generates deterministic responses without any external API call. It requires no API key, no internet, and no quota.
+
+## When to Use
+
+- **Frontend development** – build UI without waiting for AI
+- **Offline work** – work without internet
+- **Testing** – predictable responses for automated tests
+- **Quota exhausted** – continue work when other providers hit limits
+
+## Configuration
+
+```env
+AI_PROVIDER=mock
+````
+
+No other variables needed.
+
+## Behavior
+
+- Returns the same JSON response every time
+- No delay, no errors
+- Health check always passes
+
+## Example Response
 
 ```json
 {
   "success": true,
-  "message": "File uploaded successfully.",
-  "data": {
-    "filename": "lecture.pdf",
-    "content_type": "application/pdf",
-    "size": 245873
-  }
-}
-````
-
-#### Error Responses
-
-**400 Bad Request** – Missing or empty file.
-
-```json
-{
-  "success": false,
-  "message": "No file uploaded.",
-  "errors": {
-    "detail": "No file uploaded."
-  }
+  "provider": "mock",
+  "model": "mock-model",
+  "response": "{\"questions\": [...]}"
 }
 ```
-
-**413 Request Entity Too Large** – File exceeds 20 MB.
-
-```json
-{
-  "success": false,
-  "message": "File exceeds the maximum upload size (20 MB).",
-  "errors": {
-    "detail": "File exceeds the maximum upload size (20 MB)."
-  }
-}
-```
-
-**415 Unsupported Media Type** – Invalid file extension.
-
-```json
-{
-  "success": false,
-  "message": "Unsupported file type '.exe'. Allowed types: .pdf, .docx, .txt.",
-  "errors": {
-    "detail": "Unsupported file type '.exe'. Allowed types: .pdf, .docx, .txt."
-  }
-}
-```
-
-## Validation Rules
-
-| Rule                                  | Client | Server | Error Message                                   |
-| ------------------------------------- | ------ | ------ | ----------------------------------------------- |
-| File must be provided                 | ✅     | ✅     | “No file uploaded.”                             |
-| Empty file (0 bytes)                  | ❌     | ✅     | “Uploaded file is empty.”                       |
-| Allowed extensions: .pdf, .docx, .txt | ✅     | ✅     | “Unsupported file type …”                       |
-| Maximum size 20 MB                    | ✅     | ✅     | “File exceeds the maximum upload size (20 MB).” |
-
-> **Note:** Frontend validation improves user experience, but **backend validation is mandatory for security** – it cannot be bypassed.
-
-## Upload Lifecycle (UI States)
-
-| State         | Frontend Display                            | Backend                |
-| ------------- | ------------------------------------------- | ---------------------- |
-| **Idle**      | Dropzone, file browser                      | –                      |
-| **Ready**     | Selected file info + “Ready to upload”      | –                      |
-| **Uploading** | Spinner, progress bar, “Uploading…”         | Processing             |
-| **Success**   | File metadata + “Ready for Text Extraction” | File metadata returned |
-| **Error**     | Friendly error message, “Try Again”         | Validation failure     |
-
-## Supported File Types
-
-| Format | Extension | MIME Type                                                               |
-| ------ | --------- | ----------------------------------------------------------------------- |
-| PDF    | .pdf      | application/pdf                                                         |
-| Word   | .docx     | application/vnd.openxmlformats-officedocument.wordprocessingml.document |
-| Text   | .txt      | text/plain                                                              |
-
-Other formats (images, archives, executables) are rejected with a clear message.
 
 ## Future Enhancements
 
-In the next milestones, the upload system will be extended to:
+Mock may be extended to simulate:
 
-- **Text Extraction** – Extract plain text from uploaded documents.
-- **AI Processing** – Send extracted text to Google Gemini for question generation.
-- **Question Preview & Export** – Display generated questions and download as PDF.
+- Network delays
+- Timeouts
+- Invalid responses (error testing)
+- Rate limits
 
-The upload API is designed to accommodate these additions with minimal changes – the validation layer and service structure remain unchanged.
+````
+
+#### `docs/configuration.md`
+
+```markdown
+# Configuration Guide
+
+## Environment Variables
+
+Create a `.env` file in `backend/` by copying `.env.example`.
+
+### Required for All Providers
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `AI_PROVIDER` | Active AI provider | `groq`, `gemini`, `mock` |
+
+### Gemini-Specific
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GEMINI_API_KEY` | Yes (for Gemini) | API key from Google AI Studio |
+| `GEMINI_MODEL` | Yes (for Gemini) | Model name, e.g., `models/gemini-2.0-flash` |
+
+### Groq-Specific
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GROQ_API_KEY` | Yes (for Groq) | API key from Groq Console |
+| `GROQ_MODEL` | Optional | Default: `llama-3.1-8b-instant` |
+
+### Server Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `HOST` | `0.0.0.0` | Host to bind |
+| `PORT` | `8000` | Port to bind |
+
+## Common Mistakes
+
+1. **Forgetting to set `AI_PROVIDER`** – required, no default
+2. **Wrong provider name** – must match exactly (`groq`, `gemini`, `mock`)
+3. **Missing API key** – each provider needs its own key
+4. **Using `.env.example` directly** – copy to `.env` and edit
+
+## Verifying Configuration
+
+After setting `.env`, start the backend and visit `http://localhost:8000/ai/test`. A successful response confirms the provider is configured correctly.
+````
+
+---
+
+### 4. Struktur Folder
+
+```
+docs/
+├── ai-providers.md
+├── gemini.md
+├── groq.md
+├── mock.md
+└── configuration.md
+```
+
+---
+
+### 5. Quick Start
+
+Dengan dokumentasi ini, kontributor baru dapat:
+
+1. Clone repo
+2. Baca README (ringkasan)
+3. Pilih provider → ikuti panduan spesifik
+4. Konfigurasi `.env` (panduan di `configuration.md`)
+5. Jalankan backend & frontend
+6. Verifikasi dengan `http://localhost:8000/ai/test`
+
+Dokumentasi mencakup troubleshooting, arsitektur, dan panduan menambah provider baru. Tidak ada kode yang diubah, hanya peningkatan dokumentasi yang membuat proyek siap untuk kontributor open-source.
