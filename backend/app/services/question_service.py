@@ -1,30 +1,47 @@
 import logging
-from typing import Optional
-from ..ai import AIService  # AIService dari milestone 4 (belum ada generate? Akan dipanggil nanti)
-from ..question_generator.base_generator import BaseQuestionGenerator
-from ..question_generator.models import QuestionRequest, QuestionResponse
+from ..ai import AIService
+from ..question_generator.prompt_builder import PromptBuilder
+from ..question_generator.models import QuestionRequest
+from ..ai.models import AIRequest
 
 logger = logging.getLogger(__name__)
 
 class QuestionService:
     """
     Orkestrator generasi pertanyaan.
-    Menggunakan AIService untuk berkomunikasi dengan provider AI,
-    dan generator spesifik untuk parsing/validasi.
+    Menggunakan PromptBuilder untuk membuat prompt,
+    lalu AIService untuk mengirim ke provider AI.
     """
 
-    def __init__(self, ai_service: AIService, generator: BaseQuestionGenerator):
-        self.ai_service = ai_service
-        self.generator = generator
+    def __init__(self):
+        # AIService akan membaca provider dari settings secara otomatis
+        self.ai_service = AIService()
+        self.prompt_builder = PromptBuilder()
+        self._last_prompt = None   # untuk keperluan debugging
 
-    async def generate_questions(self, request: QuestionRequest) -> QuestionResponse:
+    async def generate_questions(self, request: QuestionRequest):
         """
-        Alur generasi pertanyaan:
-        1. Generator membangun request AI (prompt)
-        2. AIService mengirim ke provider
-        3. Generator mengurai respons mentah
-        4. Generator memvalidasi hasil
-        5. Mengembalikan QuestionResponse
+        Alur:
+        1. Bangun prompt dari request.
+        2. Kirim prompt ke AI melalui AIService.
+        3. Kembalikan AIResponse mentah.
         """
-        # Placeholder: akan diimplementasikan nanti
-        raise NotImplementedError("Question generation not yet implemented")
+        # 1. Bangun prompt
+        prompt = self.prompt_builder.build(request)
+        self._last_prompt = prompt
+        logger.info("Prompt built for question generation.")
+
+        # 2. Buat AIRequest
+        ai_request = AIRequest(
+            prompt=prompt,
+            temperature=0.7,
+            max_tokens=2048,
+        )
+
+        # 3. Panggil AIService (pastikan sudah diinisialisasi)
+        await self.ai_service.initialize()
+        logger.info("Calling AI provider for question generation...")
+        ai_response = await self.ai_service.generate(ai_request)
+        logger.info("AI response received.")
+
+        return ai_response
