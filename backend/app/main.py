@@ -1,7 +1,8 @@
-from fastapi import FastAPI # type: ignore
-from fastapi.middleware.cors import CORSMiddleware # type: ignore
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
-from app.api.upload import router as upload_router   # <-- baru
+from app.api.upload import router as upload_router
+from app.api.ai import router as ai_router   # <-- tambahan
 
 settings = get_settings()
 
@@ -11,7 +12,6 @@ app = FastAPI(
     description="AI-powered question generation platform",
 )
 
-# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -27,5 +27,5 @@ async def health_check():
         "message": "Backend is running",
     }
 
-# Register additional routers
-app.include_router(upload_router)   # <-- baru
+app.include_router(upload_router)
+app.include_router(ai_router)   # <-- tambahan
