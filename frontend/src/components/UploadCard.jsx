@@ -1,5 +1,9 @@
 import FileDropzone from "./FileDropzone";
 import SelectedFile from "./SelectedFile";
+import LoadingSpinner from "./feedback/LoadingSpinner";
+import ProgressBar from "./feedback/ProgressBar";
+import UploadResult from "./feedback/UploadResult";
+import UploadError from "./feedback/UploadError";
 
 export default function UploadCard({
   file,
@@ -17,24 +21,23 @@ export default function UploadCard({
   const isSuccess = uploadState === "success";
   const isError = uploadState === "error";
 
-  const isFileValid = file && !validationError;
-
   return (
     <div className="upload-card">
-      {/* Tampilan dropzone saat belum ada file */}
+      {/* Idle: dropzone */}
       {!file && isIdle && <FileDropzone onFileSelect={onFileSelect} />}
 
-      {/* Tampilan file terpilih + status validasi saat idle, uploading, error (kecuali success) */}
+      {/* File selected, not success yet (idle, uploading, error) */}
       {file && !isSuccess && (
         <>
-          <SelectedFile file={file} onRemove={!isUploading ? onRemove : null} />
+          <SelectedFile file={file} onRemove={isUploading ? null : onRemove} />
+          {/* Validasi */}
           {isIdle && validationError && (
             <div className="validation-message error">
               <span className="validation-icon">⚠️</span>
               <p>{validationError}</p>
             </div>
           )}
-          {isIdle && isFileValid && (
+          {isIdle && !validationError && (
             <div className="validation-message success">
               <span className="validation-icon">✅</span>
               <p>Ready to upload</p>
@@ -43,53 +46,30 @@ export default function UploadCard({
         </>
       )}
 
-      {/* Loading spinner */}
+      {/* Uploading state */}
       {isUploading && (
-        <div className="upload-status">
-          <div className="spinner"></div>
-          <p>Uploading... Please wait.</p>
+        <div className="upload-feedback">
+          <LoadingSpinner size={36} />
+          <ProgressBar indeterminate />
+          <p className="uploading-text">Uploading... Please wait.</p>
         </div>
       )}
 
       {/* Success */}
       {isSuccess && uploadResult && (
-        <div className="upload-status success">
-          <span className="status-icon">✅</span>
-          <h3>Upload Successful</h3>
-          <div className="result-details">
-            <p>
-              <strong>Filename:</strong> {uploadResult.filename}
-            </p>
-            <p>
-              <strong>Size:</strong>{" "}
-              {(uploadResult.size / (1024 * 1024)).toFixed(2)} MB
-            </p>
-            <p>
-              <strong>Type:</strong> {uploadResult.content_type}
-            </p>
-          </div>
-          <button className="reset-btn" onClick={onReset}>
-            Upload Another File
-          </button>
-        </div>
+        <UploadResult fileInfo={uploadResult} onReset={onReset} />
       )}
 
-      {/* Error (dari backend/network) */}
+      {/* Error */}
       {isError && (
-        <div className="upload-status error">
-          <span className="status-icon">❌</span>
-          <h3>Upload Failed</h3>
-          <p className="error-message">{uploadError}</p>
-          {file && (
-            <button className="retry-btn" onClick={onUpload}>
-              Try Again
-            </button>
-          )}
-        </div>
+        <UploadError
+          message={uploadError || "An unexpected error occurred."}
+          onRetry={file ? onUpload : null}
+        />
       )}
 
-      {/* Tombol Upload hanya jika idle, file valid, dan tidak ada error validasi */}
-      {file && isIdle && isFileValid && (
+      {/* Tombol Upload (idle, file valid) */}
+      {file && isIdle && !validationError && (
         <>
           <button className="upload-btn active" onClick={onUpload}>
             Upload
