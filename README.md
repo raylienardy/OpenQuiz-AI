@@ -112,7 +112,3 @@ openquiz-ai/
 ## 📜 License
 
 MIT
-
-```
-
-```
