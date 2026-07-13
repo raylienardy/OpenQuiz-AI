@@ -19,7 +19,6 @@ class ExportStatus(str, Enum):
     FAILED = "failed"
 
 class ExportMetadata(BaseModel):
-    """Metadata yang akan disertakan dalam setiap ekspor."""
     generated_at: Optional[str] = None
     provider: Optional[str] = None
     model: Optional[str] = None
@@ -32,34 +31,36 @@ class ExportMetadata(BaseModel):
     session_id: Optional[str] = None
     request_id: Optional[str] = None
     export_format: Optional[str] = None
+    formatter_name: Optional[str] = None
+    formatter_version: Optional[str] = None
     additional: Dict[str, Any] = Field(default_factory=dict)
 
 class ExportDocument(BaseModel):
     """Dokumen standar yang akan diekspor oleh pengekspor."""
     title: str = ""
-    content: str = ""          # Konten yang sudah diformat (misal, Markdown)
+    content: str = ""                     # Konten utama (untuk plain/markdown)
     questions: List[Dict[str, Any]] = Field(default_factory=list)
     metadata: ExportMetadata = Field(default_factory=ExportMetadata)
-    raw_data: Optional[Dict[str, Any]] = None  # Data asli jika diperlukan
+    raw_data: Optional[Dict[str, Any]] = None
+    # Untuk rich formatter: daftar bagian (section) dan footer opsional
+    sections: Optional[List[Dict[str, Any]]] = None
+    footer: Optional[str] = None
 
 class ExportRequest(BaseModel):
-    """Permintaan ekspor dari klien."""
     format: ExportFormat
     document: ExportDocument
-    options: Dict[str, Any] = Field(default_factory=dict)  # Opsi khusus format
+    options: Dict[str, Any] = Field(default_factory=dict)
 
 class ExportResult(BaseModel):
-    """Hasil ekspor."""
     status: ExportStatus = ExportStatus.COMPLETED
     format: ExportFormat
-    content: Optional[bytes] = None       # Konten biner (PDF, DOCX, dll.)
-    content_type: Optional[str] = None    # MIME type
+    content: Optional[bytes] = None
+    content_type: Optional[str] = None
     filename: Optional[str] = None
     errors: List[str] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 class ExportResponse(BaseModel):
-    """Respons yang dikirim ke klien."""
     success: bool
     message: str
     result: Optional[ExportResult] = None

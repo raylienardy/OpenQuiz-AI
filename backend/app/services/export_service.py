@@ -1,40 +1,36 @@
 import logging
-from typing import Optional
-from ..export.registry import get_export_registry
+from typing import Optional, List, Dict, Any
+from ..export.registry import get_export_registry, get_formatter_registry
 from ..export.models import (
     ExportRequest,
     ExportResponse,
     ExportResult,
     ExportStatus,
     ExportDocument,
+    ExportMetadata,
 )
-from ..export.formatter import QuestionToDocumentFormatter
 from ..export.exceptions import ExportError
 
 logger = logging.getLogger(__name__)
 
 class ExportService:
-    """Layanan orkestrasi ekspor."""
-
     def __init__(self):
-        self.registry = get_export_registry()
-        self.formatter = QuestionToDocumentFormatter()
+        self.export_registry = get_export_registry()
+        self.formatter_registry = get_formatter_registry()
 
     async def export(self, request: ExportRequest) -> ExportResponse:
         """
-        Terima ExportRequest, format dokumen, pilih pengekspor, dan kembalikan ExportResponse.
-        Saat ini hanya kerangka, karena belum ada pengekspor yang terdaftar.
+        Terima ExportRequest yang sudah berisi ExportDocument.
+        Jika perlu, pilih formatter berdasarkan format (untuk backward compatibility).
         """
         try:
-            # 1. Dapatkan pengekspor
-            exporter = self.registry.get(request.format.value)
+            exporter = self.export_registry.get(request.format.value)
         except KeyError:
             return ExportResponse(
                 success=False,
                 message=f"No exporter for format '{request.format.value}'",
             )
 
-        # 2. Inisialisasi pengekspor (placeholder)
         try:
             await exporter.initialize()
         except Exception as e:
@@ -43,7 +39,6 @@ class ExportService:
                 message=f"Failed to initialize exporter: {str(e)}",
             )
 
-        # 3. Ekspor dokumen (jika dokumen sudah ada di request; jika tidak, buat kosong)
         try:
             result = await exporter.export(request.document)
             return ExportResponse(
@@ -58,3 +53,37 @@ class ExportService:
             )
         finally:
             await exporter.close()
+
+    async def format_and_export(
+        self,
+        questions: List[Dict[str, Any]],
+        metadata: ExportMetadata,
+        format: str,
+        formatter_name: str = "plain",
+        title: str = "Generated Questions",
+        options: Optional[Dict[str, Any]] = None,
+    ) -> ExportResponse:
+        """
+        Alur lengkap: format pertanyaan -> ExportDocument -> export.
+        """
+        # 1. Pilih formatter
+        try:
+            formatter = self.formatter_registry.get(formatter_name)
+        except KeyError:
+            return ExportResponse(
+                success=False,
+                message=f"No formatter registered for '{formatter_name}'",
+            )
+
+        # 2. Format
+        document = await formatter.format(questions, metadata, title)
+
+        # 3. Buat ExportRequest
+        export_request = ExportRequest(
+            format=format,
+            document=document,
+            options=options or {},
+        )
+
+        # 4. Export
+        return await self.export(export_request)

@@ -18,5 +18,6 @@ from .exceptions import (
     ExportConfigurationError,
     ExportTimeoutError,
 )
-from .registry import ExportRegistry
-from .formatter import QuestionToDocumentFormatter
+from .registry import ExportRegistry, FormatterRegistry, get_export_registry, get_formatter_registry
+from .formatter import QuestionToDocumentFormatter  # tetap dipertahankan jika masih digunakan
+from .formatters import PlainFormatter, MarkdownFormatter, RichFormatter
