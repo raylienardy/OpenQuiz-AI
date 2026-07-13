@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Query, Response
 from fastapi.responses import JSONResponse
 from ..question_generator.models import QuestionRequest
 from ..services.question_service import QuestionService
+import json
 from ..question_generator.exceptions import (
     QuestionParserError,
     QuestionFormatError,
@@ -88,5 +89,17 @@ def _build_response(success: bool, message: str, debug_data: dict = None, status
         "message": message,
     }
     if debug_data:
-        body["debug"] = debug_data
+        # Konversi set ke list agar bisa di-serialize JSON
+        body["debug"] = _make_json_safe(debug_data)
     return JSONResponse(content=body, status_code=status_code)
+
+def _make_json_safe(obj):
+    """Rekursif mengubah set menjadi list."""
+    if isinstance(obj, dict):
+        return {k: _make_json_safe(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [_make_json_safe(v) for v in obj]
+    elif isinstance(obj, set):
+        return list(obj)
+    else:
+        return obj
