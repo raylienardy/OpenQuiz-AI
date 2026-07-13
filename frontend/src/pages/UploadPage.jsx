@@ -17,58 +17,14 @@ export default function UploadPage() {
   const [generatedQuestions, setGeneratedQuestions] = useState(null);
   const [generationError, setGenerationError] = useState("");
   const [generationMeta, setGenerationMeta] = useState(null);
+  const [devMode, setDevMode] = useState(
+    () => localStorage.getItem("devMode") === "true",
+  );
+  const [debugData, setDebugData] = useState(null);
 
-  const handleFileSelect = (file) => {
-    const error = validateFile(file);
-    setSelectedFile(file);
-    setValidationError(error);
-    setUploadState("idle");
-    setUploadResult(null);
-    setUploadError("");
-    resetGeneration();
-  };
-
-  const handleRemoveFile = () => {
-    setSelectedFile(null);
-    setValidationError(null);
-    setUploadState("idle");
-    setUploadResult(null);
-    setUploadError("");
-    resetGeneration();
-  };
-
-  const resetGeneration = () => {
-    setGenerationState("idle");
-    setGeneratedQuestions(null);
-    setGenerationError("");
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile || validationError) return;
-    setUploadState("uploading");
-    setUploadError("");
-    setUploadResult(null);
-    resetGeneration();
-
-    try {
-      const data = await uploadFile(selectedFile);
-      setUploadState("success");
-      setUploadResult(data.data);
-    } catch (error) {
-      setUploadState("error");
-      if (error.response) {
-        setUploadError(
-          error.response.data?.detail || "Upload failed due to server error.",
-        );
-      } else if (error.request) {
-        setUploadError(
-          "Unable to reach the server. Please check your connection.",
-        );
-      } else {
-        setUploadError("An unexpected error occurred.");
-      }
-    }
-  };
+  useEffect(() => {
+    localStorage.setItem("devMode", devMode);
+  }, [devMode]);
 
   const handleGenerate = async () => {
     if (!uploadResult || !uploadResult.text) return;
@@ -82,26 +38,18 @@ export default function UploadPage() {
         difficulty: "medium",
         language: "id",
       };
-      const response = await generateQuestions(payload);
+      // Tambahkan debug param jika devMode
+      const response = await generateQuestions(payload, devMode);
       setGenerationState("success");
       setGeneratedQuestions(response.data.questions);
-      setGenerationMeta(response.metadata); // simpan seluruh objek metadata
+      setGenerationMeta(response.metadata);
+      setDebugData(response.debug || null);
     } catch (error) {
       setGenerationState("error");
-      setGenerationError(
-        error.response?.data?.detail ||
-          "Failed to generate questions. Please try again.",
-      );
+      const msg = error.response?.data?.detail || "Generation failed.";
+      setGenerationError(msg);
+      setDebugData(error.response?.data?.debug || null); // debug info mungkin ada di error response
     }
-  };
-
-  const handleReset = () => {
-    setSelectedFile(null);
-    setValidationError(null);
-    setUploadState("idle");
-    setUploadResult(null);
-    setUploadError("");
-    resetGeneration();
   };
 
   return (
@@ -111,6 +59,7 @@ export default function UploadPage() {
         <p>
           Upload your PDF, DOCX, or TXT file to generate AI-powered questions.
         </p>
+        <DeveloperToolbar devMode={devMode} onToggle={setDevMode} />
       </div>
 
       <div className="upload-section">
@@ -143,8 +92,10 @@ export default function UploadPage() {
           {generationState === "error" && (
             <div className="error-message">❌ {generationError}</div>
           )}
+
           {generationState === "success" && generatedQuestions && (
             <>
+              <AIPipelineInspector debugData={debugData} isOpen={devMode} />
               <QuestionAnalyticsPanel
                 questions={generatedQuestions}
                 provider={generationMeta?.provider}

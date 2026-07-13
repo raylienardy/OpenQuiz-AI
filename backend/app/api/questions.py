@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi.responses import JSONResponse
 from ..question_generator.models import QuestionRequest
 from ..services.question_service import QuestionService
 from ..question_generator.exceptions import (
@@ -22,27 +23,41 @@ router = APIRouter(prefix="/questions", tags=["Question Generation"])
 async def generate_questions(request: QuestionRequest, debug: bool = Query(False)):
     question_service = QuestionService()
     try:
-        result = await question_service.generate_questions(request)
+        result = await question_service.generate_questions(request, debug=debug)
     except (QuestionParserError, QuestionFormatError, QuestionValidationError) as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        status_code = 422
+        detail = str(e)
+        return _build_response(False, detail, question_service.debug_info if debug else None, status_code)
     except QuestionGenerationError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        status_code = 500
+        detail = str(e)
+        return _build_response(False, detail, question_service.debug_info if debug else None, status_code)
     except AIAuthenticationError as e:
-        raise HTTPException(status_code=401, detail=str(e))
+        status_code = 401
+        detail = str(e)
+        return _build_response(False, detail, question_service.debug_info if debug else None, status_code)
     except AIRateLimitError as e:
-        raise HTTPException(status_code=429, detail=str(e))
+        status_code = 429
+        detail = str(e)
+        return _build_response(False, detail, question_service.debug_info if debug else None, status_code)
     except AITimeoutError as e:
-        raise HTTPException(status_code=504, detail=str(e))
-    except AIConnectionError as e:
-        raise HTTPException(status_code=502, detail=str(e))
-    except AIResponseError as e:
-        raise HTTPException(status_code=502, detail=str(e))
+        status_code = 504
+        detail = str(e)
+        return _build_response(False, detail, question_service.debug_info if debug else None, status_code)
+    except (AIConnectionError, AIResponseError) as e:
+        status_code = 502
+        detail = str(e)
+        return _build_response(False, detail, question_service.debug_info if debug else None, status_code)
     except ProviderNotSupportedError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        status_code = 400
+        detail = str(e)
+        return _build_response(False, detail, question_service.debug_info if debug else None, status_code)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
+        status_code = 500
+        detail = f"Internal error: {str(e)}"
+        return _build_response(False, detail, question_service.debug_info if debug else None, status_code)
 
-    response = {
+    response_data = {
         "success": True,
         "message": "Questions generated successfully.",
         "data": {
@@ -59,7 +74,19 @@ async def generate_questions(request: QuestionRequest, debug: bool = Query(False
             "finish_reason": result.metadata.get("finish_reason"),
         },
     }
+    if debug:
+        response_data["debug"] = question_service.debug_info
+        # opsional: prompt juga ditambahkan jika diminta (tapi debug_info sudah ada prompt)
     if debug and question_service._last_prompt:
-        response["prompt"] = question_service._last_prompt
+        response_data["prompt"] = question_service._last_prompt  # redundansi yang aman
 
-    return response
+    return response_data
+
+def _build_response(success: bool, message: str, debug_data: dict = None, status_code: int = 200):
+    body = {
+        "success": success,
+        "message": message,
+    }
+    if debug_data:
+        body["debug"] = debug_data
+    return JSONResponse(content=body, status_code=status_code)

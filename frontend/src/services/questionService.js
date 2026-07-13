@@ -1,11 +1,7 @@
 import api from "./api";
 
-/**
- * Mengirim teks ke backend untuk menghasilkan pertanyaan.
- * @param {object} payload - { text, question_type, number_of_questions, difficulty, language, additional_instruction }
- * @returns {Promise<object>} - response dari backend
- */
-export async function generateQuestions(payload) {
-  const response = await api.post("/questions/generate", payload);
+export async function generateQuestions(payload, debug = false) {
+  const params = debug ? { debug: true } : {};
+  const response = await api.post("/questions/generate", payload, { params });
   return response.data;
 }
