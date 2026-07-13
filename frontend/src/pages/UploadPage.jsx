@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import UploadCard from "../components/UploadCard";
 import QuestionReviewWorkspace from "../components/questions/QuestionReviewWorkspace";
 import QuestionAnalyticsPanel from "../components/questions/QuestionAnalyticsPanel";
@@ -13,6 +13,8 @@ import { uploadFile } from "../services/uploadService";
 import { generateQuestions } from "../services/questionService";
 import { validateFile } from "../utils/validateFile";
 import "./UploadPage.css";
+import GenerationSessionPanel from "../components/session/GenerationSessionPanel";
+import { createSession } from "../session/generationSession";
 
 export default function UploadPage() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -27,6 +29,24 @@ export default function UploadPage() {
   const [devMode, setDevMode] = useState(
     () => localStorage.getItem("devMode") === "true",
   );
+
+  // Bentuk session object secara memoized dari metadata dan questions
+  const generationSession = useMemo(() => {
+    if (generationState !== "success" || !generationMeta || !generatedQuestions)
+      return null;
+    return createSession({
+      provider: generationMeta.provider,
+      model: generationMeta.model,
+      generationTime: generationMeta.latency_seconds,
+      questionCount: generatedQuestions.length,
+      language: "id", // bisa dari state, untuk sementara hardcode
+      difficulty: "medium",
+      questionType: "multiple_choice",
+      promptVersion: generationMeta.prompt_version,
+      schemaVersion: generationMeta.schema_version,
+      status: "completed",
+    });
+  }, [generationState, generationMeta, generatedQuestions]);
 
   useEffect(() => {
     localStorage.setItem("devMode", devMode);
@@ -160,6 +180,10 @@ export default function UploadPage() {
           {generationState === "success" && generatedQuestions && (
             <>
               <SuccessState message="Questions generated successfully!" />
+
+              {/* Session Panel */}
+              <GenerationSessionPanel session={generationSession} />
+
               <AIPipelineInspector debugData={debugData} isOpen={devMode} />
               <QuestionAnalyticsPanel
                 questions={generatedQuestions}
