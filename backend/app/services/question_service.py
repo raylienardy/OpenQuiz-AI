@@ -6,6 +6,8 @@ from ..question_generator.models import QuestionRequest, QuestionResponse
 from ..question_generator.json_parser import JSONResponseParser
 from ..question_generator.validators import QuestionValidator
 from ..ai.models import AIRequest
+from ..question_generator.token_utils import truncate_text, estimate_tokens
+
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,15 @@ class QuestionService:
         self._last_prompt = None
 
     async def generate_questions(self, request: QuestionRequest) -> QuestionResponse:
+
+        text, was_truncated = truncate_text(request.text, max_tokens=5000)
+        if was_truncated:
+            logger.warning("Document truncated to 5000 tokens.")
+            # Buat request baru dengan teks yang sudah dipotong
+            request = request.copy(update={"text": text})
+            # Atau bisa juga langsung memodifikasi request.text (jika mutable)
+            # Simpan warning untuk dikembalikan (opsional)
+      
         prompt = self.prompt_builder.build(request)
         self._last_prompt = prompt
         logger.info("Prompt built.")
