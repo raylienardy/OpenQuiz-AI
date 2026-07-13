@@ -1,5 +1,6 @@
 import { useState } from "react";
 import UploadCard from "../components/UploadCard";
+import QuestionPreview from "../components/questions/QuestionPreview";
 import { uploadFile } from "../services/uploadService";
 import { generateQuestions } from "../services/questionService";
 import { validateFile } from "../utils/validateFile";
@@ -7,12 +8,15 @@ import "./UploadPage.css";
 
 export default function UploadPage() {
   const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadState, setUploadState] = useState("idle"); // idle | uploading | success | error
+  const [uploadState, setUploadState] = useState("idle");
   const [uploadResult, setUploadResult] = useState(null);
   const [uploadError, setUploadError] = useState("");
   const [validationError, setValidationError] = useState(null);
+
+  // State untuk generasi pertanyaan
   const [generationState, setGenerationState] = useState("idle"); // idle | generating | success | error
-  const [generatedText, setGeneratedText] = useState("");
+  const [generatedQuestions, setGeneratedQuestions] = useState(null);
+  const [generationError, setGenerationError] = useState("");
 
   const handleFileSelect = (file) => {
     const error = validateFile(file);
@@ -21,8 +25,7 @@ export default function UploadPage() {
     setUploadState("idle");
     setUploadResult(null);
     setUploadError("");
-    setGenerationState("idle");
-    setGeneratedText("");
+    resetGeneration();
   };
 
   const handleRemoveFile = () => {
@@ -31,8 +34,13 @@ export default function UploadPage() {
     setUploadState("idle");
     setUploadResult(null);
     setUploadError("");
+    resetGeneration();
+  };
+
+  const resetGeneration = () => {
     setGenerationState("idle");
-    setGeneratedText("");
+    setGeneratedQuestions(null);
+    setGenerationError("");
   };
 
   const handleUpload = async () => {
@@ -40,13 +48,12 @@ export default function UploadPage() {
     setUploadState("uploading");
     setUploadError("");
     setUploadResult(null);
-    setGenerationState("idle");
-    setGeneratedText("");
+    resetGeneration();
 
     try {
       const data = await uploadFile(selectedFile);
       setUploadState("success");
-      setUploadResult(data.data); // data.data berisi text, filename, dll.
+      setUploadResult(data.data);
     } catch (error) {
       setUploadState("error");
       if (error.response) {
@@ -66,20 +73,25 @@ export default function UploadPage() {
   const handleGenerate = async () => {
     if (!uploadResult || !uploadResult.text) return;
     setGenerationState("generating");
+    setGenerationError("");
     try {
       const payload = {
         text: uploadResult.text,
-        question_type: "multiple_choice", // default, bisa dibuat pilihan nanti
+        question_type: "multiple_choice",
         number_of_questions: 5,
         difficulty: "medium",
         language: "id",
       };
       const data = await generateQuestions(payload);
+      // data.data.questions adalah array pertanyaan yang sudah divalidasi
       setGenerationState("success");
-      setGeneratedText(data.raw_response);
+      setGeneratedQuestions(data.data.questions);
     } catch (error) {
       setGenerationState("error");
-      setGeneratedText(error.response?.data?.detail || "Generation failed.");
+      setGenerationError(
+        error.response?.data?.detail ||
+          "Failed to generate questions. Please try again.",
+      );
     }
   };
 
@@ -89,8 +101,7 @@ export default function UploadPage() {
     setUploadState("idle");
     setUploadResult(null);
     setUploadError("");
-    setGenerationState("idle");
-    setGeneratedText("");
+    resetGeneration();
   };
 
   return (
@@ -116,7 +127,7 @@ export default function UploadPage() {
         />
       </div>
 
-      {/* Tombol Generate tampil setelah upload sukses dan teks tersedia */}
+      {/* Tombol Generate muncul setelah upload sukses dan teks tersedia */}
       {uploadState === "success" && uploadResult && uploadResult.text && (
         <div className="generation-section">
           <button
@@ -129,18 +140,13 @@ export default function UploadPage() {
               : "Generate Questions"}
           </button>
 
-          {generationState === "generating" && (
-            <div className="loading-spinner">⏳ Generating questions...</div>
-          )}
-          {generationState === "success" && (
-            <div className="generated-content">
-              <h3>Generated Output (Raw)</h3>
-              <pre className="raw-response">{generatedText}</pre>
-            </div>
-          )}
-          {generationState === "error" && (
-            <div className="error-message">❌ {generatedText}</div>
-          )}
+          {/* Pratinjau pertanyaan */}
+          <QuestionPreview
+            questions={generatedQuestions}
+            isLoading={generationState === "generating"}
+            error={generationState === "error" ? generationError : null}
+            onRegenerate={handleGenerate}
+          />
         </div>
       )}
 
