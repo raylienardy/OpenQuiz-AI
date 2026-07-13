@@ -3,6 +3,7 @@ export default function QuestionCard({ question, index }) {
     <div className="question-card">
       <div className="question-header">
         <span className="question-number">Question {index + 1}</span>
+        <span className="question-difficulty">{question.difficulty}</span>
         <span className="question-type-badge">{question.type}</span>
       </div>
       <p className="question-text">{question.question}</p>

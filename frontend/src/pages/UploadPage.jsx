@@ -1,6 +1,6 @@
 import { useState } from "react";
 import UploadCard from "../components/UploadCard";
-import QuestionPreview from "../components/questions/QuestionPreview";
+import QuestionReviewWorkspace from "../components/questions/QuestionReviewWorkspace"; // ganti
 import { uploadFile } from "../services/uploadService";
 import { generateQuestions } from "../services/questionService";
 import { validateFile } from "../utils/validateFile";
@@ -12,9 +12,7 @@ export default function UploadPage() {
   const [uploadResult, setUploadResult] = useState(null);
   const [uploadError, setUploadError] = useState("");
   const [validationError, setValidationError] = useState(null);
-
-  // State untuk generasi pertanyaan
-  const [generationState, setGenerationState] = useState("idle"); // idle | generating | success | error
+  const [generationState, setGenerationState] = useState("idle");
   const [generatedQuestions, setGeneratedQuestions] = useState(null);
   const [generationError, setGenerationError] = useState("");
 
@@ -127,7 +125,6 @@ export default function UploadPage() {
         />
       </div>
 
-      {/* Tombol Generate muncul setelah upload sukses dan teks tersedia */}
       {uploadState === "success" && uploadResult && uploadResult.text && (
         <div className="generation-section">
           <button
@@ -140,13 +137,16 @@ export default function UploadPage() {
               : "Generate Questions"}
           </button>
 
-          {/* Pratinjau pertanyaan */}
-          <QuestionPreview
-            questions={generatedQuestions}
-            isLoading={generationState === "generating"}
-            error={generationState === "error" ? generationError : null}
-            onRegenerate={handleGenerate}
-          />
+          {generationState === "generating" && <QuestionLoading />}
+          {generationState === "error" && (
+            <div className="error-message">❌ {generationError}</div>
+          )}
+          {generationState === "success" && generatedQuestions && (
+            <QuestionReviewWorkspace
+              questions={generatedQuestions}
+              onRegenerate={handleGenerate}
+            />
+          )}
         </div>
       )}
 
