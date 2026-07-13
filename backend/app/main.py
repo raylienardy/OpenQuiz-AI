@@ -4,6 +4,8 @@ from app.config import get_settings
 from app.api.upload import router as upload_router
 from app.api.ai import router as ai_router   # <-- tambahan
 from app.api.questions import router as questions_router   # tambahan
+import logging
+from app.logging.formatter import JsonFormatter
 
 settings = get_settings()
 
@@ -31,3 +33,9 @@ async def health_check():
 app.include_router(upload_router)
 app.include_router(ai_router)   # <-- tambahan
 app.include_router(questions_router)
+
+# Set handler untuk logger kita
+handler = logging.StreamHandler()
+handler.setFormatter(JsonFormatter())
+logging.getLogger("openquiz.generation").addHandler(handler)
+logging.getLogger("openquiz.generation").setLevel(logging.INFO)
