@@ -1,8 +1,28 @@
 # OpenQuiz AI
 
-AI-powered question generation platform (Version 1.0 MVP).
+Platform generasi soal berbasis AI.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+## Fitur Utama
+
+- Unggah PDF, DOCX, TXT → ekstraksi teks otomatis
+- Dukungan multiple AI provider (Groq, Gemini, Mock)
+- Generasi soal pilihan ganda, esai, benar/salah
+- Review workspace dengan pencarian, filter, sort, pagination
+- Analitik soal, metadata AI, mode developer, clipboard
+
+## Mulai Cepat
+
+Lihat [Panduan Pengembang](docs/contributing/developer-guide.md).
+
+## Dokumentasi
+
+- [Arsitektur & Alur](docs/architecture/review-flow.md)
+- [API](docs/api/question-generation.md)
+- [Kontribusi](docs/contributing/developer-guide.md)
+
+## Lisensi
+
+MIT
 
 ## 🚀 Current Features
 
