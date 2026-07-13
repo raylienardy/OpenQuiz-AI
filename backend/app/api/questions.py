@@ -5,7 +5,7 @@ from ..question_generator.exceptions import (
     QuestionParserError,
     QuestionFormatError,
     QuestionGenerationError,
-    QuestionValidationError,   # <-- tambahan
+    QuestionValidationError,
 )
 from ..ai.exceptions import (
     AIAuthenticationError,
@@ -22,9 +22,8 @@ router = APIRouter(prefix="/questions", tags=["Question Generation"])
 async def generate_questions(request: QuestionRequest, debug: bool = Query(False)):
     question_service = QuestionService()
     try:
-        # Sekarang mengembalikan QuestionResponse (Pydantic)
         result = await question_service.generate_questions(request)
-    except (QuestionParserError, QuestionFormatError) as e:
+    except (QuestionParserError, QuestionFormatError, QuestionValidationError) as e:
         raise HTTPException(status_code=422, detail=str(e))
     except QuestionGenerationError as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -42,18 +41,23 @@ async def generate_questions(request: QuestionRequest, debug: bool = Query(False
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
-    except (QuestionParserError, QuestionFormatError, QuestionValidationError) as e:
-        raise HTTPException(status_code=422, detail=str(e))
-    except AITimeoutError as e:
-        raise HTTPException(status_code=504, detail=str(e))
 
-    # Respons sukses dengan data pertanyaan terstruktur
     response = {
         "success": True,
         "message": "Questions generated successfully.",
-        "provider": result.provider,
-        "model": result.model,
-        "data": result.model_dump(by_alias=False, exclude={"provider", "model", "generation_time", "metadata"}),
+        "data": {
+            "questions": result.questions,
+        },
+        "metadata": {
+            "provider": result.provider,
+            "model": result.model,
+            "latency_seconds": result.generation_time,
+            "prompt_version": result.metadata.get("prompt_version"),
+            "schema_version": result.metadata.get("schema_version"),
+            "generation_timestamp": result.metadata.get("generation_timestamp"),
+            "token_usage": result.metadata.get("token_usage"),
+            "finish_reason": result.metadata.get("finish_reason"),
+        },
     }
     if debug and question_service._last_prompt:
         response["prompt"] = question_service._last_prompt

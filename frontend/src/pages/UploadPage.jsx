@@ -16,10 +16,7 @@ export default function UploadPage() {
   const [generationState, setGenerationState] = useState("idle");
   const [generatedQuestions, setGeneratedQuestions] = useState(null);
   const [generationError, setGenerationError] = useState("");
-  const [generationMeta, setGenerationMeta] = useState({
-    provider: "",
-    model: "",
-  });
+  const [generationMeta, setGenerationMeta] = useState(null);
 
   const handleFileSelect = (file) => {
     const error = validateFile(file);
@@ -85,10 +82,10 @@ export default function UploadPage() {
         difficulty: "medium",
         language: "id",
       };
-      const data = await generateQuestions(payload);
+      const response = await generateQuestions(payload);
       setGenerationState("success");
-      setGeneratedQuestions(data.data.questions);
-      setGenerationMeta({ provider: data.provider, model: data.model });
+      setGeneratedQuestions(response.data.questions);
+      setGenerationMeta(response.metadata); // simpan seluruh objek metadata
     } catch (error) {
       setGenerationState("error");
       setGenerationError(
@@ -150,9 +147,10 @@ export default function UploadPage() {
             <>
               <QuestionAnalyticsPanel
                 questions={generatedQuestions}
-                provider={uploadResult?.provider} // jika uploadResult menyimpan provider
-                model={uploadResult?.model}
+                provider={generationMeta?.provider}
+                model={generationMeta?.model}
               />
+              <AIMetadataPanel metadata={generationMeta} />
               <QuestionReviewWorkspace
                 questions={generatedQuestions}
                 onRegenerate={handleGenerate}

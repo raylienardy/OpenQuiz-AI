@@ -1,18 +1,17 @@
-import asyncio
+import time
 import logging
+from datetime import datetime, timezone
 from .ai_service import AIService
 from ..question_generator.prompt_builder import PromptBuilder
 from ..question_generator.models import QuestionRequest, QuestionResponse
 from ..question_generator.json_parser import JSONResponseParser
 from ..question_generator.validators import QuestionValidator
 from ..ai.models import AIRequest
-from ..question_generator.token_utils import truncate_text, estimate_tokens
-
 
 logger = logging.getLogger(__name__)
 
-# Timeout untuk permintaan AI (detik)
-AI_TIMEOUT = 60
+PROMPT_VERSION = "v1"
+SCHEMA_VERSION = "1.0"
 
 class QuestionService:
     def __init__(self):
@@ -23,47 +22,42 @@ class QuestionService:
         self._last_prompt = None
 
     async def generate_questions(self, request: QuestionRequest) -> QuestionResponse:
-
-        text, was_truncated = truncate_text(request.text, max_tokens=5000)
-        if was_truncated:
-            logger.warning("Document truncated to 5000 tokens.")
-            # Buat request baru dengan teks yang sudah dipotong
-            request = request.copy(update={"text": text})
-            # Atau bisa juga langsung memodifikasi request.text (jika mutable)
-            # Simpan warning untuk dikembalikan (opsional)
-      
         prompt = self.prompt_builder.build(request)
         self._last_prompt = prompt
         logger.info("Prompt built.")
 
-        try:
-            await self.ai_service.initialize()
-        except Exception as e:
-            logger.error(f"AI initialization failed: {str(e)}")
-            raise
-
+        await self.ai_service.initialize()
         ai_request = AIRequest(prompt=prompt, temperature=0.7, max_tokens=2048)
 
+        start_time = time.time()
         try:
-            ai_response = await asyncio.wait_for(
-                self.ai_service.generate(ai_request),
-                timeout=AI_TIMEOUT
-            )
-            logger.info("AI response received.")
-        except asyncio.TimeoutError:
-            logger.error("AI request timed out.")
-            raise AITimeoutError("AI provider timed out. Please try again.")
+            ai_response = await self.ai_service.generate(ai_request)
         except Exception as e:
             logger.error(f"AI generation failed: {str(e)}")
             raise
+        latency = time.time() - start_time
+        logger.info("AI response received.")
 
         try:
             question_response = self.parser.parse(ai_response.response_text)
-            question_response.provider = ai_response.provider
-            question_response.model = ai_response.metadata.get("model", "unknown")
         except Exception as e:
             logger.error(f"Parsing failed: {str(e)}")
             raise
 
         self.validator.validate(question_response)
+
+        # Isi metadata
+        question_response.provider = ai_response.provider
+        question_response.model = ai_response.metadata.get("model", "unknown")
+        question_response.generation_time = latency
+        question_response.metadata.update({
+            "prompt_version": PROMPT_VERSION,
+            "schema_version": SCHEMA_VERSION,
+            "generation_timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        if "usage" in ai_response.metadata:
+            question_response.metadata["token_usage"] = ai_response.metadata["usage"]
+        if "finish_reason" in ai_response.metadata:
+            question_response.metadata["finish_reason"] = ai_response.metadata["finish_reason"]
+
         return question_response

@@ -657,3 +657,54 @@
   color: #6c757d;
   font-style: italic;
 }
+
+/* AI Metadata Panel */
+.ai-metadata-panel {
+  margin-top: 2rem;
+}
+
+.ai-metadata-panel h3 {
+  margin-bottom: 1rem;
+}
+
+.metadata-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.metadata-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+}
+
+.metadata-card-title {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  color: #6c757d;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.metadata-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.metadata-label {
+  color: #495057;
+}
+
+.metadata-value {
+  font-weight: 500;
+  color: #212529;
+}
+
+.metadata-unavailable {
+  color: #6c757d;
+  font-style: italic;
+}
