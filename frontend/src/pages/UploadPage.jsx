@@ -5,6 +5,7 @@ import { uploadFile } from "../services/uploadService";
 import { generateQuestions } from "../services/questionService";
 import { validateFile } from "../utils/validateFile";
 import "./UploadPage.css";
+import QuestionAnalyticsPanel from "../components/questions/QuestionAnalyticsPanel";
 
 export default function UploadPage() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -15,6 +16,10 @@ export default function UploadPage() {
   const [generationState, setGenerationState] = useState("idle");
   const [generatedQuestions, setGeneratedQuestions] = useState(null);
   const [generationError, setGenerationError] = useState("");
+  const [generationMeta, setGenerationMeta] = useState({
+    provider: "",
+    model: "",
+  });
 
   const handleFileSelect = (file) => {
     const error = validateFile(file);
@@ -81,9 +86,9 @@ export default function UploadPage() {
         language: "id",
       };
       const data = await generateQuestions(payload);
-      // data.data.questions adalah array pertanyaan yang sudah divalidasi
       setGenerationState("success");
       setGeneratedQuestions(data.data.questions);
+      setGenerationMeta({ provider: data.provider, model: data.model });
     } catch (error) {
       setGenerationState("error");
       setGenerationError(
@@ -142,10 +147,17 @@ export default function UploadPage() {
             <div className="error-message">❌ {generationError}</div>
           )}
           {generationState === "success" && generatedQuestions && (
-            <QuestionReviewWorkspace
-              questions={generatedQuestions}
-              onRegenerate={handleGenerate}
-            />
+            <>
+              <QuestionAnalyticsPanel
+                questions={generatedQuestions}
+                provider={uploadResult?.provider} // jika uploadResult menyimpan provider
+                model={uploadResult?.model}
+              />
+              <QuestionReviewWorkspace
+                questions={generatedQuestions}
+                onRegenerate={handleGenerate}
+              />
+            </>
           )}
         </div>
       )}
