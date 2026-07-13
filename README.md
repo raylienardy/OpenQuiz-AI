@@ -37,7 +37,7 @@ OpenQuiz AI uses a provider-independent architecture. Switch providers by changi
 
 ```bash
 cd backend
-python -m venv venv
+python -m venv .venv
 source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env           # edit .env, choose your AI provider

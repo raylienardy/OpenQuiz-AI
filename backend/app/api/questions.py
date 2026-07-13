@@ -5,6 +5,7 @@ from ..question_generator.exceptions import (
     QuestionParserError,
     QuestionFormatError,
     QuestionGenerationError,
+    QuestionValidationError,   # <-- tambahan
 )
 from ..ai.exceptions import (
     AIAuthenticationError,
@@ -41,6 +42,8 @@ async def generate_questions(request: QuestionRequest, debug: bool = Query(False
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
+    except (QuestionParserError, QuestionFormatError, QuestionValidationError) as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
     # Respons sukses dengan data pertanyaan terstruktur
     response = {
