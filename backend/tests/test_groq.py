@@ -10,6 +10,19 @@ from app.ai.exceptions import (
 from groq import AuthenticationError, RateLimitError, APITimeoutError, APIError
 from groq import APIConnectionError as GroqAPIConnectionError
 
+from unittest.mock import MagicMock
+
+def _make_groq_error(exc_class, message="Error"):
+    """Buat instance exception Groq dengan response dan body tiruan."""
+    response_mock = MagicMock()
+    response_mock.status_code = 400
+    response_mock.json.return_value = {"error": {"message": message}}
+    return exc_class(
+        message=message,
+        response=response_mock,
+        body={"error": {"message": message}}
+    )
+
 @pytest.fixture(autouse=True)
 def mock_settings(monkeypatch):
     monkeypatch.setattr("app.ai.groq_client.get_settings", lambda: MagicMock(
@@ -35,14 +48,14 @@ async def test_initialize_success(groq_client):
 @pytest.mark.asyncio
 async def test_generate_maps_authentication_error(groq_client):
     groq_client._client = AsyncMock()
-    groq_client._client.chat.completions.create.side_effect = AuthenticationError("Invalid Key")
+    groq_client._client.chat.completions.create.side_effect = _make_groq_error(AuthenticationError, "Invalid Key")
     with pytest.raises(AIAuthenticationError):
         await groq_client.generate(AIRequest(prompt="Test"))
 
 @pytest.mark.asyncio
 async def test_generate_maps_rate_limit_error(groq_client):
     groq_client._client = AsyncMock()
-    groq_client._client.chat.completions.create.side_effect = RateLimitError("Rate limit")
+    groq_client._client.chat.completions.create.side_effect = _make_groq_error(RateLimitError, "Rate limit")
     with pytest.raises(AIRateLimitError):
         await groq_client.generate(AIRequest(prompt="Test"))
 

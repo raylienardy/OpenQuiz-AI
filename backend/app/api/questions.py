@@ -44,6 +44,8 @@ async def generate_questions(request: QuestionRequest, debug: bool = Query(False
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
     except (QuestionParserError, QuestionFormatError, QuestionValidationError) as e:
         raise HTTPException(status_code=422, detail=str(e))
+    except AITimeoutError as e:
+        raise HTTPException(status_code=504, detail=str(e))
 
     # Respons sukses dengan data pertanyaan terstruktur
     response = {
@@ -51,7 +53,7 @@ async def generate_questions(request: QuestionRequest, debug: bool = Query(False
         "message": "Questions generated successfully.",
         "provider": result.provider,
         "model": result.model,
-        "data": result.dict(by_alias=False, exclude={"provider", "model", "generation_time", "metadata"}),
+        "data": result.model_dump(by_alias=False, exclude={"provider", "model", "generation_time", "metadata"}),
     }
     if debug and question_service._last_prompt:
         response["prompt"] = question_service._last_prompt

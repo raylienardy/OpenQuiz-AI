@@ -60,6 +60,11 @@ class JSONResponseParser(BaseParser):
         return text.strip()
 
     def _dict_to_question_response(self, data: dict) -> QuestionResponse:
+        if "questions" not in data:
+            raise QuestionFormatError("'questions' key is missing in AI response.")
+        questions_raw = data.get("questions", [])
+        if not isinstance(questions_raw, list):
+            raise QuestionFormatError("'questions' field must be a list.")
         """Konversi dictionary mentah ke QuestionResponse dengan validasi Pydantic."""
         try:
             questions_raw = data.get("questions", [])

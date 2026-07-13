@@ -29,8 +29,8 @@ class Question(BaseModel):
 
 class QuestionRequest(BaseModel):
     text: str = Field(..., description="Teks sumber (dokumen yang diekstrak)")
-    question_type: QuestionType = Field(QuestionType.MULTIPLE_CHOICE)
-    number_of_questions: int = Field(5, ge=1, le=50)
+    question_type: QuestionType
+    number_of_questions: int = Field(..., ge=1, le=50)
     difficulty: Optional[DifficultyLevel] = None
     language: str = "id"  # default Indonesia
     additional_instruction: Optional[str] = None

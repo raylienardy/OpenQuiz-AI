@@ -86,6 +86,9 @@ class QuestionValidator:
         choice_texts = [c.text.strip().lower() for c in q.choices]
         if len(set(choice_texts)) != len(choice_texts):
             raise QuestionValidationError(f"{prefix}: duplicate choice texts detected.")
+          
+        if not q.answer or not q.answer.strip():
+            raise QuestionValidationError(f"{prefix}: answer is missing or empty.")
 
         # Jawaban harus merujuk ke salah satu label (jika label digunakan)
         if q.choices and q.choices[0].label:  # asumsikan ada label
