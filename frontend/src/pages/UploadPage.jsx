@@ -1,35 +1,84 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import UploadCard from "../components/UploadCard";
-import QuestionReviewWorkspace from "../components/questions/QuestionReviewWorkspace"; // ganti
+import QuestionReviewWorkspace from "../components/questions/QuestionReviewWorkspace";
+import QuestionAnalyticsPanel from "../components/questions/QuestionAnalyticsPanel";
+import AIMetadataPanel from "../components/questions/AIMetadataPanel";
+import AIPipelineInspector from "../components/debug/AIPipelineInspector";
+import DeveloperToolbar from "../components/debug/DeveloperToolbar";
+import LoadingMessage from "../components/feedback/LoadingMessage";
+import RetryCard from "../components/feedback/RetryCard";
+import EmptyState from "../components/feedback/EmptyState";
+import SuccessState from "../components/feedback/SuccessState";
 import { uploadFile } from "../services/uploadService";
 import { generateQuestions } from "../services/questionService";
 import { validateFile } from "../utils/validateFile";
 import "./UploadPage.css";
-import QuestionAnalyticsPanel from "../components/questions/QuestionAnalyticsPanel";
 
 export default function UploadPage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadState, setUploadState] = useState("idle");
   const [uploadResult, setUploadResult] = useState(null);
-  const [uploadError, setUploadError] = useState("");
+  const [uploadError, setUploadError] = useState(null);
   const [validationError, setValidationError] = useState(null);
   const [generationState, setGenerationState] = useState("idle");
   const [generatedQuestions, setGeneratedQuestions] = useState(null);
-  const [generationError, setGenerationError] = useState("");
   const [generationMeta, setGenerationMeta] = useState(null);
+  const [debugData, setDebugData] = useState(null);
   const [devMode, setDevMode] = useState(
     () => localStorage.getItem("devMode") === "true",
   );
-  const [debugData, setDebugData] = useState(null);
 
   useEffect(() => {
     localStorage.setItem("devMode", devMode);
   }, [devMode]);
 
+  const handleFileSelect = (file) => {
+    const error = validateFile(file);
+    setSelectedFile(file);
+    setValidationError(error);
+    setUploadState("idle");
+    setUploadResult(null);
+    setUploadError(null);
+    resetGeneration();
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    setValidationError(null);
+    setUploadState("idle");
+    setUploadResult(null);
+    setUploadError(null);
+    resetGeneration();
+  };
+
+  const resetGeneration = () => {
+    setGenerationState("idle");
+    setGeneratedQuestions(null);
+    setGenerationMeta(null);
+    setDebugData(null);
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile || validationError) return;
+    setUploadState("uploading");
+    setUploadError(null);
+    setUploadResult(null);
+    resetGeneration();
+
+    try {
+      const data = await uploadFile(selectedFile);
+      setUploadState("success");
+      setUploadResult(data.data);
+    } catch (error) {
+      setUploadState("error");
+      setUploadError(error);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!uploadResult || !uploadResult.text) return;
     setGenerationState("generating");
-    setGenerationError("");
+    setUploadError(null);
     try {
       const payload = {
         text: uploadResult.text,
@@ -38,7 +87,6 @@ export default function UploadPage() {
         difficulty: "medium",
         language: "id",
       };
-      // Tambahkan debug param jika devMode
       const response = await generateQuestions(payload, devMode);
       setGenerationState("success");
       setGeneratedQuestions(response.data.questions);
@@ -46,10 +94,17 @@ export default function UploadPage() {
       setDebugData(response.debug || null);
     } catch (error) {
       setGenerationState("error");
-      const msg = error.response?.data?.detail || "Generation failed.";
-      setGenerationError(msg);
-      setDebugData(error.response?.data?.debug || null); // debug info mungkin ada di error response
+      setUploadError(error); // kita gunakan RetryCard untuk menampilkan
     }
+  };
+
+  const handleReset = () => {
+    setSelectedFile(null);
+    setValidationError(null);
+    setUploadState("idle");
+    setUploadResult(null);
+    setUploadError(null);
+    resetGeneration();
   };
 
   return (
@@ -76,6 +131,13 @@ export default function UploadPage() {
         />
       </div>
 
+      {/* Status upload */}
+      {uploadState === "uploading" && <LoadingMessage stage="upload" />}
+      {uploadState === "error" && (
+        <RetryCard error={uploadError} onRetry={handleUpload} />
+      )}
+
+      {/* Tombol generate dan status generasi */}
       {uploadState === "success" && uploadResult && uploadResult.text && (
         <div className="generation-section">
           <button
@@ -88,13 +150,16 @@ export default function UploadPage() {
               : "Generate Questions"}
           </button>
 
-          {generationState === "generating" && <QuestionLoading />}
+          {generationState === "generating" && (
+            <LoadingMessage stage="generating" />
+          )}
           {generationState === "error" && (
-            <div className="error-message">❌ {generationError}</div>
+            <RetryCard error={uploadError} onRetry={handleGenerate} />
           )}
 
           {generationState === "success" && generatedQuestions && (
             <>
+              <SuccessState message="Questions generated successfully!" />
               <AIPipelineInspector debugData={debugData} isOpen={devMode} />
               <QuestionAnalyticsPanel
                 questions={generatedQuestions}
@@ -107,6 +172,13 @@ export default function UploadPage() {
                 onRegenerate={handleGenerate}
               />
             </>
+          )}
+
+          {generationState === "idle" && !generatedQuestions && (
+            <EmptyState
+              title="Ready to generate"
+              description="Click the button above to create AI-powered questions."
+            />
           )}
         </div>
       )}
