@@ -6,6 +6,7 @@ import QuestionPagination from "./QuestionPagination";
 import QuestionList from "./QuestionList";
 import QuestionEmpty from "./QuestionEmpty";
 import QuestionToolbar from "./QuestionToolbar";
+import QuestionDetailPanel from "./QuestionDetailPanel";
 
 const DIFFICULTY_ORDER = { easy: 1, medium: 2, hard: 3 };
 
@@ -15,19 +16,17 @@ export default function QuestionReviewWorkspace({ questions, onRegenerate }) {
   const [sortOption, setSortOption] = useState("default");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [selectedQuestionId, setSelectedQuestionId] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(null);
 
-  // Dapatkan tipe unik dari data untuk filter
   const types = useMemo(() => {
     if (!questions) return [];
-    const uniqueTypes = [...new Set(questions.map((q) => q.type))];
-    return uniqueTypes;
+    return [...new Set(questions.map((q) => q.type))];
   }, [questions]);
 
-  // Filter
   const filteredQuestions = useMemo(() => {
     if (!questions) return [];
     let result = [...questions];
-    // Search
     if (searchTerm.trim() !== "") {
       const term = searchTerm.toLowerCase();
       result = result.filter(
@@ -38,49 +37,43 @@ export default function QuestionReviewWorkspace({ questions, onRegenerate }) {
           q.type.toLowerCase().includes(term),
       );
     }
-    // Filter by type
     if (filterType) {
       result = result.filter((q) => q.type === filterType);
     }
     return result;
   }, [questions, searchTerm, filterType]);
 
-  // Sort
   const sortedQuestions = useMemo(() => {
     const arr = [...filteredQuestions];
-    if (sortOption === "question_asc") {
+    if (sortOption === "question_asc")
       arr.sort((a, b) => a.question.localeCompare(b.question));
-    } else if (sortOption === "question_desc") {
+    else if (sortOption === "question_desc")
       arr.sort((a, b) => b.question.localeCompare(a.question));
-    } else if (sortOption === "type_asc") {
+    else if (sortOption === "type_asc")
       arr.sort((a, b) => a.type.localeCompare(b.type));
-    } else if (sortOption === "type_desc") {
+    else if (sortOption === "type_desc")
       arr.sort((a, b) => b.type.localeCompare(a.type));
-    } else if (sortOption === "difficulty_asc") {
+    else if (sortOption === "difficulty_asc")
       arr.sort(
         (a, b) =>
           (DIFFICULTY_ORDER[a.difficulty] || 0) -
           (DIFFICULTY_ORDER[b.difficulty] || 0),
       );
-    } else if (sortOption === "difficulty_desc") {
+    else if (sortOption === "difficulty_desc")
       arr.sort(
         (a, b) =>
           (DIFFICULTY_ORDER[b.difficulty] || 0) -
           (DIFFICULTY_ORDER[a.difficulty] || 0),
       );
-    }
-    // default: keep original order
     return arr;
   }, [filteredQuestions, sortOption]);
 
-  // Pagination
   const totalPages = Math.ceil(sortedQuestions.length / pageSize);
   const visibleQuestions = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return sortedQuestions.slice(start, start + pageSize);
   }, [sortedQuestions, currentPage, pageSize]);
 
-  // Reset page saat filter/search berubah
   const handleSearchChange = useCallback((val) => {
     setSearchTerm(val);
     setCurrentPage(1);
@@ -93,6 +86,21 @@ export default function QuestionReviewWorkspace({ questions, onRegenerate }) {
     setSortOption(val);
     setCurrentPage(1);
   }, []);
+
+  const handleSelectQuestion = useCallback((question, index) => {
+    setSelectedQuestionId(question.id || index);
+    setSelectedIndex(index);
+  }, []);
+
+  // Cari objek pertanyaan terpilih (dari seluruh questions, bukan yang difilter)
+  const selectedQuestion = useMemo(() => {
+    if (selectedQuestionId === null) return null;
+    return (
+      questions.find(
+        (q) => (q.id || questions.indexOf(q)) === selectedQuestionId,
+      ) || null
+    );
+  }, [questions, selectedQuestionId]);
 
   return (
     <div className="question-review-workspace">
@@ -109,23 +117,37 @@ export default function QuestionReviewWorkspace({ questions, onRegenerate }) {
         <QuestionToolbar questions={questions} onRegenerate={onRegenerate} />
       </div>
 
-      {visibleQuestions.length > 0 ? (
-        <>
-          <QuestionList questions={visibleQuestions} />
-          <QuestionPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            pageSize={pageSize}
-            onPageSizeChange={(size) => {
-              setPageSize(size);
-              setCurrentPage(1);
-            }}
+      <div className="workspace-layout">
+        <div className="workspace-list">
+          {visibleQuestions.length > 0 ? (
+            <>
+              <QuestionList
+                questions={visibleQuestions}
+                onSelect={handleSelectQuestion}
+                selectedQuestionId={selectedQuestionId}
+              />
+              <QuestionPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                pageSize={pageSize}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+            </>
+          ) : (
+            <QuestionEmpty />
+          )}
+        </div>
+        <div className="workspace-detail">
+          <QuestionDetailPanel
+            question={selectedQuestion}
+            index={selectedIndex}
           />
-        </>
-      ) : (
-        <QuestionEmpty />
-      )}
+        </div>
+      </div>
     </div>
   );
 }

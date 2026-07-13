@@ -1,51 +1,33 @@
-export default function QuestionCard({ question, index }) {
+export default function QuestionCard({
+  question,
+  index,
+  isSelected,
+  onSelect,
+}) {
   return (
-    <div className="question-card">
+    <div
+      className={`question-card ${isSelected ? "selected" : ""}`}
+      onClick={() => onSelect(question, index)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onSelect(question, index);
+      }}
+    >
       <div className="question-header">
-        <span className="question-number">Question {index + 1}</span>
-        <span className="question-difficulty">{question.difficulty}</span>
-        <span className="question-type-badge">{question.type}</span>
+        <span className="question-number">Q{index + 1}</span>
+        <span className="question-type-badge">
+          {question.type.replace("_", " ")}
+        </span>
+        {question.difficulty && (
+          <span className="question-difficulty">{question.difficulty}</span>
+        )}
       </div>
-      <p className="question-text">{question.question}</p>
-
-      {question.type === "multiple_choice" && question.choices && (
-        <div className="choices-list">
-          {question.choices.map((choice, i) => (
-            <div
-              key={i}
-              className={`choice-item ${choice.label === question.answer ? "correct" : ""}`}
-            >
-              <span className="choice-label">{choice.label}.</span>
-              <span className="choice-text">{choice.text}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {question.type === "true_false" && (
-        <div className="choices-list">
-          <div
-            className={`choice-item ${question.answer?.toUpperCase() === "TRUE" ? "correct" : ""}`}
-          >
-            True
-          </div>
-          <div
-            className={`choice-item ${question.answer?.toUpperCase() === "FALSE" ? "correct" : ""}`}
-          >
-            False
-          </div>
-        </div>
-      )}
-
-      <div className="answer-section">
-        <strong>Answer:</strong> {question.answer}
-      </div>
-
-      {question.explanation && (
-        <div className="explanation-section">
-          <strong>Explanation:</strong> {question.explanation}
-        </div>
-      )}
+      <p className="question-text">
+        {question.question.substring(0, 100)}
+        {question.question.length > 100 ? "..." : ""}
+      </p>
+      <div className="question-answer-indicator">Answer: {question.answer}</div>
     </div>
   );
 }
