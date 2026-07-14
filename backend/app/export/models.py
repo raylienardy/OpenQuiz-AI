@@ -18,6 +18,11 @@ class ExportStatus(str, Enum):
     COMPLETED = "completed"
     FAILED = "failed"
 
+class TokenUsage(BaseModel):
+    prompt_tokens: Optional[int] = None
+    completion_tokens: Optional[int] = None
+    total_tokens: Optional[int] = None
+
 class ExportMetadata(BaseModel):
     generated_at: Optional[str] = None
     provider: Optional[str] = None
@@ -33,6 +38,10 @@ class ExportMetadata(BaseModel):
     export_format: Optional[str] = None
     formatter_name: Optional[str] = None
     formatter_version: Optional[str] = None
+    application_version: Optional[str] = "1.0.0"
+    generation_status: Optional[str] = None  # completed, failed, partial
+    token_usage: Optional[TokenUsage] = None
+    provider_latency: Optional[float] = None
     additional: Dict[str, Any] = Field(default_factory=dict)
 
 class ExportDocument(BaseModel):

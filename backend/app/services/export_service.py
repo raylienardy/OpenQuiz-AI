@@ -65,6 +65,7 @@ class ExportService:
     ) -> ExportResponse:
         """
         Alur lengkap: format pertanyaan -> ExportDocument -> export.
+        Metadata yang diterima akan diteruskan ke formatter.
         """
         # 1. Pilih formatter
         try:
@@ -75,7 +76,7 @@ class ExportService:
                 message=f"No formatter registered for '{formatter_name}'",
             )
 
-        # 2. Format
+        # 2. Format dengan metadata yang diberikan
         document = await formatter.format(questions, metadata, title)
 
         # 3. Buat ExportRequest
