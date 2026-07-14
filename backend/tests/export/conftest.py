@@ -7,7 +7,6 @@ from app.export.models import (
 from app.export.session import ExportSession, SessionStatus
 from app.export.session_manager import ExportSessionManager, get_session_manager
 
-# Sample questions yang bisa digunakan di banyak pengujian
 @pytest.fixture
 def sample_questions():
     return [
@@ -75,8 +74,22 @@ def empty_document():
 
 @pytest.fixture
 def clean_session_manager():
-    """Reset session manager sebelum setiap pengujian."""
-    from app.export.session_manager import _session_manager
-    global _session_manager
-    _session_manager = None
-    return get_session_manager()
+    """Reset session manager sepenuhnya untuk setiap pengujian."""
+    from app.export import session_manager as sm_module
+    # Hapus semua sesi yang tersimpan
+    mgr = sm_module.get_session_manager()
+    mgr._sessions.clear()
+    return mgr
+  
+# Tambahkan fixture ini
+@pytest.fixture
+def clean_export_registry():
+    """Mengosongkan registry ekspor untuk setiap pengujian."""
+    from app.export.registry import get_export_registry
+    registry = get_export_registry()
+    # Simpan isi asli untuk dipulihkan
+    original = dict(registry._exporters)
+    registry._exporters.clear()
+    yield registry
+    # Pulihkan setelah pengujian selesai
+    registry._exporters.update(original)

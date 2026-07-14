@@ -1,38 +1,39 @@
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 from app.services.export_service import ExportService
-from app.export.models import ExportRequest, ExportFormat, ExportDocument, ExportMetadata, ExportResult, ExportStatus
+from app.export.models import (
+    ExportRequest, ExportFormat, ExportDocument, ExportMetadata, ExportResult, ExportStatus
+)
 
 class TestExportService:
     @pytest.mark.asyncio
-    async def test_export_with_registered_exporter(self, sample_document):
+    async def test_export_with_registered_exporter(self, sample_document, clean_export_registry):
         service = ExportService()
-        # Daftarkan dummy exporter
         dummy = AsyncMock()
         dummy.initialize.return_value = None
         dummy.export.return_value = ExportResult(
             status=ExportStatus.COMPLETED,
-            format=ExportFormat.PDF,
-            content=b"%PDF...",
-            content_type="application/pdf",
-            filename="test.pdf",
+            format=ExportFormat.CSV,   # Harus sesuai dengan yang didaftarkan
+            content=b"csv data",
+            content_type="text/csv",
+            filename="test.csv",
         )
         dummy.close.return_value = None
-        service.export_registry.register("pdf", dummy)
+        service.export_registry.register("csv", dummy)
 
         request = ExportRequest(
-            format=ExportFormat.PDF,
+            format=ExportFormat.CSV,
             document=sample_document,
         )
         response = await service.export(request)
         assert response.success is True
-        assert response.result.format == ExportFormat.PDF
+        assert response.result.format == ExportFormat.CSV
 
     @pytest.mark.asyncio
-    async def test_export_unregistered_format(self, sample_document):
+    async def test_export_unregistered_format(self, sample_document, clean_export_registry):
         service = ExportService()
         request = ExportRequest(
-            format=ExportFormat.PDF,  # PDF belum terdaftar
+            format=ExportFormat.DOCX,
             document=sample_document,
         )
         response = await service.export(request)
@@ -40,9 +41,8 @@ class TestExportService:
         assert "No exporter" in response.message
 
     @pytest.mark.asyncio
-    async def test_format_and_export(self, sample_questions, sample_metadata):
+    async def test_format_and_export(self, sample_questions, sample_metadata, clean_export_registry):
         service = ExportService()
-        # Daftarkan formatter dan dummy exporter
         from app.export.formatters import PlainFormatter
         service.formatter_registry.register("plain", PlainFormatter())
 
@@ -50,18 +50,18 @@ class TestExportService:
         dummy.initialize.return_value = None
         dummy.export.return_value = ExportResult(
             status=ExportStatus.COMPLETED,
-            format=ExportFormat.PDF,
-            content=b"data",
-            content_type="text/plain",
-            filename="test.txt",
+            format=ExportFormat.MARKDOWN,
+            content=b"markdown",
+            content_type="text/markdown",
+            filename="test.md",
         )
         dummy.close.return_value = None
-        service.export_registry.register("pdf", dummy)
+        service.export_registry.register("markdown", dummy)
 
         response = await service.format_and_export(
             questions=sample_questions,
             metadata=sample_metadata,
-            format="pdf",
+            format="markdown",
             formatter_name="plain",
             title="My Questions",
         )

@@ -19,23 +19,14 @@ class ExportService:
         self.formatter_registry = get_formatter_registry()
 
     async def export(self, request: ExportRequest) -> ExportResponse:
-        """
-        Terima ExportRequest yang sudah berisi ExportDocument.
-        Jika perlu, pilih formatter berdasarkan format (untuk backward compatibility).
-        """
-        try:
-            exporter = self.export_registry.get(request.format.value)
-        except KeyError:
-            return ExportResponse(
-                success=False,
-                message=f"No exporter for format '{request.format.value}'",
-            )
-        
-        # Di dalam metode export():
+        """Ekspor dokumen menggunakan exporter yang sesuai."""
         try:
             exporter = self.export_registry.get_exporter(request.format.value)
         except ExporterNotFound as e:
-            return ExportResponse(success=False, message=str(e))
+            return ExportResponse(
+                success=False,
+                message=str(e),
+            )
 
         try:
             await exporter.initialize()
@@ -69,11 +60,7 @@ class ExportService:
         title: str = "Generated Questions",
         options: Optional[Dict[str, Any]] = None,
     ) -> ExportResponse:
-        """
-        Alur lengkap: format pertanyaan -> ExportDocument -> export.
-        Metadata yang diterima akan diteruskan ke formatter.
-        """
-        # 1. Pilih formatter
+        """Format pertanyaan lalu ekspor."""
         try:
             formatter = self.formatter_registry.get(formatter_name)
         except KeyError:
@@ -82,15 +69,12 @@ class ExportService:
                 message=f"No formatter registered for '{formatter_name}'",
             )
 
-        # 2. Format dengan metadata yang diberikan
         document = await formatter.format(questions, metadata, title)
 
-        # 3. Buat ExportRequest
         export_request = ExportRequest(
             format=format,
             document=document,
             options=options or {},
         )
 
-        # 4. Export
         return await self.export(export_request)

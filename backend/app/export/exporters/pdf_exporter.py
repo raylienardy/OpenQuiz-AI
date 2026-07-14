@@ -19,7 +19,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 from ..base_exporter import BaseExporter
-from ..models import ExportDocument, ExportResult, ExportStatus
+from ..models import ExportDocument, ExportResult, ExportStatus, ExportMetadata
+
 from ..exceptions import ExportGenerationError
 
 logger = logging.getLogger(__name__)
