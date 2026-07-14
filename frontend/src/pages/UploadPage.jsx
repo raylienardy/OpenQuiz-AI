@@ -29,6 +29,36 @@ export default function UploadPage() {
   const [devMode, setDevMode] = useState(
     () => localStorage.getItem("devMode") === "true",
   );
+  // state tambahan
+  const [showExportPreview, setShowExportPreview] = useState(false);
+  const [exportPreviewData, setExportPreviewData] = useState(null);
+
+  // fungsi untuk mengambil preview
+  const handlePreviewExport = async (format = "pdf") => {
+    if (!generatedQuestions) return;
+    try {
+      const response = await fetch("/api/export/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questions: generatedQuestions,
+          format: format,
+          metadata: generationMeta,
+        }),
+      });
+      const preview = await response.json();
+      setExportPreviewData(preview);
+      setShowExportPreview(true);
+    } catch (error) {
+      console.error("Failed to load preview:", error);
+    }
+  };
+
+  const handleDownload = async () => {
+    // Implementasi pengunduhan akan dihubungkan ke endpoint /export/download nanti
+    // Untuk sekarang, bisa gunakan window.open atau fetch dengan blob.
+    window.open(`/api/export/download?format=pdf&...`, "_blank");
+  };
 
   // Bentuk session object secara memoized dari metadata dan questions
   const generationSession = useMemo(() => {
@@ -195,6 +225,32 @@ export default function UploadPage() {
                 questions={generatedQuestions}
                 onRegenerate={handleGenerate}
               />
+              {/* TOMBOL EXPORT PDF & MODAL PREVIEW */}
+              <div style={{ marginTop: "1rem" }}>
+                <button onClick={() => handlePreviewExport("pdf")}>
+                  📄 Export PDF
+                </button>
+              </div>
+
+              {showExportPreview && exportPreviewData && (
+                <div
+                  className="modal-overlay"
+                  onClick={() => setShowExportPreview(false)}
+                >
+                  <div
+                    className="modal-content"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ExportPreview
+                      previewData={exportPreviewData}
+                      onDownload={handleDownload}
+                    />
+                    <button onClick={() => setShowExportPreview(false)}>
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
 

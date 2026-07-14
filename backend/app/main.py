@@ -6,6 +6,8 @@ from app.api.ai import router as ai_router   # <-- tambahan
 from app.api.questions import router as questions_router   # tambahan
 import logging
 from app.logging.formatter import JsonFormatter
+from app.api.export import router as export_router
+
 
 settings = get_settings()
 
@@ -33,6 +35,8 @@ async def health_check():
 app.include_router(upload_router)
 app.include_router(ai_router)   # <-- tambahan
 app.include_router(questions_router)
+app.include_router(export_router)
+
 
 # Set handler untuk logger kita
 handler = logging.StreamHandler()
