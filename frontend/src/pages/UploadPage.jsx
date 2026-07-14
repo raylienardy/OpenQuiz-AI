@@ -233,7 +233,10 @@ export default function UploadPage() {
               />
               {/* TOMBOL EXPORT PDF & MODAL PREVIEW */}
               <div style={{ marginTop: "1rem" }}>
-                <button onClick={() => handlePreviewExport("pdf")}>
+                <button
+                  className="export-btn"
+                  onClick={() => handlePreviewExport("pdf")}
+                >
                   📄 Export PDF
                 </button>
               </div>
@@ -251,7 +254,10 @@ export default function UploadPage() {
                       previewData={exportPreviewData}
                       onDownload={handleDownload}
                     />
-                    <button onClick={() => setShowExportPreview(false)}>
+                    <button
+                      className="close-btn"
+                      onClick={() => setShowExportPreview(false)}
+                    >
                       Close
                     </button>
                   </div>

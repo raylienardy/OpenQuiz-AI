@@ -14,7 +14,7 @@ async def export_preview(request: dict):
     if not questions:
         raise HTTPException(status_code=400, detail="No questions provided.")
 
-    fmt_str = request.get("format", "pdf").upper()  # ubah ke huruf besar
+    fmt_str = request.get("format", "pdf").upper()
     if fmt_str not in ExportFormat.__members__:
         raise HTTPException(status_code=400, detail=f"Unsupported format: {fmt_str}")
 

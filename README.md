@@ -62,7 +62,7 @@ source .venv/bin/activate      # Windows: venv\Scripts\activate
 source .venv/Scripts/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env           # edit .env, choose your AI provider
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload
 ```
 
 **Minimal `.env` for Groq:**
