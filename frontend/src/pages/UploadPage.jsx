@@ -13,8 +13,9 @@ import { uploadFile } from "../services/uploadService";
 import { generateQuestions } from "../services/questionService";
 import { validateFile } from "../utils/validateFile";
 import "./UploadPage.css";
-import GenerationSessionPanel from "../components/session/GenerationSessionPanel";
+import { createSession } from "../session/generationSession";
 import ExportPreview from "../components/export/ExportPreview";
+import GenerationSessionPanel from "../components/session/GenerationSessionPanel";
 
 export default function UploadPage() {
   const [selectedFile, setSelectedFile] = useState(null);
