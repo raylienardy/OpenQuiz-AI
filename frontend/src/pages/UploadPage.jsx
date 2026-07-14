@@ -14,7 +14,7 @@ import { generateQuestions } from "../services/questionService";
 import { validateFile } from "../utils/validateFile";
 import "./UploadPage.css";
 import GenerationSessionPanel from "../components/session/GenerationSessionPanel";
-import { createSession } from "../components/session/generationSession";
+import ExportPreview from "../components/export/ExportPreview";
 
 export default function UploadPage() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -37,7 +37,7 @@ export default function UploadPage() {
   const handlePreviewExport = async (format = "pdf") => {
     if (!generatedQuestions) return;
     try {
-      const response = await fetch("/api/export/preview", {
+      const response = await fetch("http://localhost:8000/export/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -55,8 +55,6 @@ export default function UploadPage() {
   };
 
   const handleDownload = async () => {
-    // Implementasi pengunduhan akan dihubungkan ke endpoint /export/download nanti
-    // Untuk sekarang, bisa gunakan window.open atau fetch dengan blob.
     window.open(`/api/export/download?format=pdf&...`, "_blank");
   };
 
