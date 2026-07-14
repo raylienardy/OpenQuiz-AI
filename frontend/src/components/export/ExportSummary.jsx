@@ -13,7 +13,9 @@ export default function ExportSummary({
       </div>
       <div className="summary-item">
         <span className="summary-label">Format:</span>
-        <span className="summary-value">{format.toUpperCase()}</span>
+        <span className="summary-value">
+          {format ? format.toUpperCase() : "—"}
+        </span>
       </div>
       {estimatedSize && (
         <div className="summary-item">

@@ -47,6 +47,13 @@ export default function UploadPage() {
           metadata: generationMeta,
         }),
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Export preview failed:", errorText);
+        return;
+      }
+
       const preview = await response.json();
       setExportPreviewData(preview);
       setShowExportPreview(true);
