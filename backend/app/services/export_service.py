@@ -9,7 +9,7 @@ from ..export.models import (
     ExportDocument,
     ExportMetadata,
 )
-from ..export.exceptions import ExportError
+from ..export.exceptions import ExportError, ExporterNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,12 @@ class ExportService:
                 success=False,
                 message=f"No exporter for format '{request.format.value}'",
             )
+        
+        # Di dalam metode export():
+        try:
+            exporter = self.export_registry.get_exporter(request.format.value)
+        except ExporterNotFound as e:
+            return ExportResponse(success=False, message=str(e))
 
         try:
             await exporter.initialize()
