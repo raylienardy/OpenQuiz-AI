@@ -23,6 +23,8 @@ from .formatter import QuestionToDocumentFormatter  # tetap dipertahankan jika m
 from .formatters import PlainFormatter, MarkdownFormatter, RichFormatter
 from .exporters.pdf_exporter import PDFExporter
 from .registry import get_export_registry
+from .session import ExportSession, SessionStatus
+from .session_manager import ExportSessionManager, get_session_manager
 
 # Daftarkan PDFExporter saat modul export diimpor pertama kali
 _registry = get_export_registry()

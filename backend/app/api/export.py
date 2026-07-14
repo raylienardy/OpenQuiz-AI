@@ -1,27 +1,15 @@
-"""
-API untuk pratinjau ekspor.
-"""
-
 from fastapi import APIRouter, HTTPException
-from ..question_generator.models import QuestionRequest  # Anda bisa membuat model terpisah
 from ..services.export_service import ExportService
 from ..export.models import ExportFormat, ExportMetadata
 from ..export.preview_builder import ExportPreviewBuilder
 from ..export.preview import ExportPreview
+from ..export.session_manager import get_session_manager
+from ..export.session import SessionStatus
 
 router = APIRouter(prefix="/export", tags=["Export"])
 
 @router.post("/preview")
 async def export_preview(request: dict):
-    """
-    Menerima data pertanyaan dan format, mengembalikan pratinjau ekspor.
-    Body diharapkan:
-    {
-        "questions": [...],
-        "format": "pdf",
-        "metadata": {...}  # opsional
-    }
-    """
     questions = request.get("questions", [])
     if not questions:
         raise HTTPException(status_code=400, detail="No questions provided.")
@@ -36,10 +24,8 @@ async def export_preview(request: dict):
 
     # Gunakan ExportService untuk membangun ExportDocument
     service = ExportService()
-    # Pilih formatter default sesuai format (atau rich untuk pdf)
     formatter_name = "rich" if fmt == ExportFormat.PDF else "markdown"
 
-    # Format dokumen
     document = await service.formatter_registry.get(formatter_name).format(
         questions, metadata, title="Generated Questions"
     )
@@ -48,4 +34,27 @@ async def export_preview(request: dict):
     builder = ExportPreviewBuilder()
     preview = builder.build(document, fmt)
 
+    # Buat sesi ekspor
+    session_mgr = get_session_manager()
+    session = session_mgr.create_session(
+        correlation_id=preview.metadata.request_id,
+        export_format=fmt,
+        provider=preview.metadata.provider,
+        model=preview.metadata.model,
+        question_count=preview.question_count,
+        language=preview.metadata.language,
+        difficulty=preview.metadata.difficulty,
+        generated_filename=preview.filename,
+        estimated_size=preview.estimated_size,
+        estimated_pages=preview.estimated_pages,
+        warnings=preview.warnings,
+        metadata=preview.metadata,
+        preview_available=True,
+    )
+
+    # Sesi sekarang PREVIEW_READY
+    session_mgr.update_session(session.session_id, status=SessionStatus.PREVIEW_READY)
+
+    # Kembalikan preview dengan session_id
+    preview.session_id = session.session_id
     return preview.dict()
