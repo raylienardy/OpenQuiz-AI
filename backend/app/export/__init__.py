@@ -16,3 +16,11 @@ from .exporters.pdf_exporter import PDFExporter
 _registry = get_export_registry()
 if not _registry.supports("pdf"):
     _registry.register("pdf", PDFExporter())
+    
+_formatter_reg = get_formatter_registry()
+if not _formatter_reg.supports("plain"):
+    _formatter_reg.register("plain", PlainFormatter())
+if not _formatter_reg.supports("markdown"):
+    _formatter_reg.register("markdown", MarkdownFormatter())
+if not _formatter_reg.supports("rich"):
+    _formatter_reg.register("rich", RichFormatter())
