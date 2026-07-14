@@ -63,7 +63,36 @@ export default function UploadPage() {
   };
 
   const handleDownload = async () => {
-    window.open(`/api/export/download?format=pdf&...`, "_blank");
+    if (!generatedQuestions) return;
+    try {
+      const response = await fetch("http://localhost:8000/export/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questions: generatedQuestions,
+          format: "pdf",
+          metadata: generationMeta || {},
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Download failed:", errorText);
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = exportPreviewData?.filename || "questions.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download error:", error);
+    }
   };
 
   // Bentuk session object secara memoized dari metadata dan questions
